@@ -537,21 +537,29 @@
 
 .code-image-wrapper {
   width: 100%;
-  min-height: 150px;
+  min-height: 200px;
+  max-height: 250px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: white;
   border-radius: 6px;
-  padding: 10px;
+  padding: 15px;
   margin-bottom: 12px;
+  overflow: hidden;
 }
 
 .code-image {
   max-width: 100%;
-  max-height: 200px;
+  max-height: 100%;
+  width: auto;
+  height: auto;
   object-fit: contain;
   border-radius: 4px;
+  /* Asegurar que la imagen sea visible */
+  display: block;
+  image-rendering: crisp-edges;
+  image-rendering: -webkit-optimize-contrast;
 }
 
 .code-error {
@@ -563,10 +571,11 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  padding: 20px;
 }
 
 .btn-download {
-  padding: 8px 16px;
+  padding: 10px 20px;
   background: #3b82f6;
   color: white;
   border: none;
@@ -579,13 +588,31 @@
   max-width: 200px;
 }
 
-.btn-download:hover {
+.btn-download:hover:not(:disabled) {
   background: #2563eb;
   transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2);
 }
 
-.btn-download:active {
+.btn-download:active:not(:disabled) {
   transform: translateY(0);
+}
+
+.btn-download:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Spinner para loading de códigos */
+.codes-section .spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e5e7eb;
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
 }
 
 /* Responsive */
@@ -595,6 +622,7 @@
   }
   
   .code-image-wrapper {
-    min-height: 120px;
+    min-height: 150px;
+    max-height: 200px;
   }
 }
