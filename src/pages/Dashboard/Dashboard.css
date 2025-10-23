@@ -4,6 +4,9 @@
   padding: 24px;
   background-color: #f9fafb;
   min-height: 100vh;
+  /* ✅ NUEVO: Asegurar que ocupe todo el ancho disponible */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .loading-container {
@@ -50,11 +53,7 @@
   margin-top: 4px;
 }
 
-.header-actions {
-  display: flex;
-  gap: 12px;
-}
-
+/* ✅ SIMPLIFICADO: Solo un botón ahora */
 .refresh-btn {
   padding: 10px 20px;
   background-color: white;
@@ -69,22 +68,6 @@
 .refresh-btn:hover {
   background-color: #f9fafb;
   border-color: #3b82f6;
-}
-
-.logout-btn {
-  padding: 10px 20px;
-  background-color: #ef4444;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  transition: all 0.2s;
-}
-
-.logout-btn:hover {
-  background-color: #dc2626;
 }
 
 .metrics-grid {
@@ -280,45 +263,6 @@
   padding: 40px;
 }
 
-.action-buttons {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 32px;
-}
-
-.action-btn {
-  padding: 16px;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  transition: all 0.2s;
-}
-
-.action-btn.primary {
-  background-color: #3b82f6;
-  color: white;
-}
-
-.action-btn.primary:hover {
-  background-color: #2563eb;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
-}
-
-.action-btn.secondary {
-  background-color: white;
-  color: #3b82f6;
-  border: 2px solid #3b82f6;
-}
-
-.action-btn.secondary:hover {
-  background-color: #eff6ff;
-  transform: translateY(-2px);
-}
-
 .inventory-info {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -346,7 +290,7 @@
   color: #111827;
 }
 
-/* Responsive adjustments */
+/* ========== RESPONSIVE ========== */
 @media (max-width: 768px) {
   .dashboard-container {
     padding: 16px;
@@ -364,11 +308,15 @@
     grid-template-columns: 1fr;
   }
 
-  .action-buttons {
-    grid-template-columns: 1fr;
-  }
-
   .inventory-info {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ✅ NUEVO: Responsive para sidebar colapsado */
+@media (max-width: 768px) {
+  .dashboard-container {
+    /* Ajustar cuando el sidebar está colapsado (70px) */
+    padding: 12px;
   }
 }

@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import dashboardService from '../../api/dashboardService';
 import {
@@ -15,8 +14,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import './Dashboard.css';
 
 const Dashboard = () => {
-  const { user, logout } = useContext(AuthContext);
-  const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
 
   const [dashboardData, setDashboardData] = useState(null);
   const [chartData, setChartData] = useState([]);
@@ -52,14 +50,6 @@ const Dashboard = () => {
     }
   };
 
-  const handleLogout = () => {
-    if (window.confirm('¿Estás seguro de que deseas cerrar sesión?')) {
-      logout();
-      navigate('/login');
-      toast.success('Sesión cerrada correctamente');
-    }
-  };
-
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
@@ -87,22 +77,17 @@ const Dashboard = () => {
     <div className="dashboard-container">
       <Toaster position="top-right" />
 
-      {/* Header */}
+      {/* Header simple - SIN botón de logout (ya está en Layout) */}
       <header className="dashboard-header">
         <div>
           <h1 className="header-title">Dashboard</h1>
           <p className="header-subtitle">
-            Bienvenido, <strong>{user?.username}</strong> ({user?.role?.name})
+            Bienvenido, <strong>{user?.username}</strong>
           </p>
         </div>
-        <div className="header-actions">
-          <button onClick={loadDashboard} className="refresh-btn">
-            🔄 Actualizar
-          </button>
-          <button onClick={handleLogout} className="logout-btn">
-            🚪 Cerrar Sesión
-          </button>
-        </div>
+        <button onClick={loadDashboard} className="refresh-btn">
+          🔄 Actualizar
+        </button>
       </header>
 
       {/* Métricas principales */}
@@ -208,34 +193,6 @@ const Dashboard = () => {
             )}
           </div>
         </div>
-      </div>
-
-      {/* Botones de acción */}
-      <div className="action-buttons">
-        <button
-          onClick={() => navigate('/products')}
-          className="action-btn primary"
-        >
-          📦 Gestionar Productos
-        </button>
-        <button
-          onClick={() => navigate('/sales')}
-          className="action-btn secondary"
-        >
-          🛒 Ver Ventas
-        </button>
-        <button
-          onClick={() => navigate('/users')}
-          className="action-btn secondary"
-        >
-          👥 Gestionar Empleados
-        </button>
-        <button
-          onClick={() => navigate('/reports')}
-          className="action-btn secondary"
-        >
-          📊 Reportes
-        </button>
       </div>
 
       {/* Información del inventario */}

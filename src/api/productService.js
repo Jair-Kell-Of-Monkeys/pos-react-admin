@@ -1,23 +1,28 @@
+// src/api/productService.js
 import api from './axios.config';
 
 const productService = {
-  // Listar productos
-  getAll: async (params = {}) => {
+  // Obtener todos los productos
+  getAll: async () => {
     try {
-      const response = await api.get('/products/', { params });
+      const response = await api.get('/products/');
       return response.data;
     } catch (error) {
-      throw { error: 'Error al obtener productos' };
+      throw {
+        error: error.response?.data?.error || 'Error al obtener productos'
+      };
     }
   },
 
-  // Obtener por ID
+  // Obtener un producto por ID
   getById: async (id) => {
     try {
       const response = await api.get(`/products/${id}/`);
       return response.data;
     } catch (error) {
-      throw { error: 'Error al obtener producto' };
+      throw {
+        error: error.response?.data?.error || 'Error al obtener producto'
+      };
     }
   },
 
@@ -27,19 +32,21 @@ const productService = {
       const response = await api.post('/products/', productData);
       return response.data;
     } catch (error) {
-      const errorMsg = error.response?.data?.error || 
-                      'Error al crear producto';
-      throw { error: errorMsg };
+      throw {
+        error: error.response?.data?.error || 'Error al crear producto'
+      };
     }
   },
 
   // Actualizar producto
   update: async (id, productData) => {
     try {
-      const response = await api.put(`/products/${id}/`, productData);
+      const response = await api.patch(`/products/${id}/`, productData);
       return response.data;
     } catch (error) {
-      throw { error: 'Error al actualizar producto' };
+      throw {
+        error: error.response?.data?.error || 'Error al actualizar producto'
+      };
     }
   },
 
@@ -47,47 +54,48 @@ const productService = {
   delete: async (id) => {
     try {
       await api.delete(`/products/${id}/`);
-      return { success: true };
     } catch (error) {
-      throw { error: 'Error al eliminar producto' };
+      throw {
+        error: error.response?.data?.error || 'Error al eliminar producto'
+      };
     }
   },
 
   // Ajustar stock
-  adjustStock: async (id, adjustment, reason) => {
+  adjustStock: async (id, adjustmentData) => {
     try {
-      const response = await api.patch(`/products/${id}/adjust-stock/`, {
-        adjustment,
-        reason,
-      });
+      const response = await api.patch(`/products/${id}/adjust-stock/`, adjustmentData);
       return response.data;
     } catch (error) {
-      throw { error: 'Error al ajustar stock' };
+      throw {
+        error: error.response?.data?.error || 'Error al ajustar stock'
+      };
     }
   },
 
   // Búsqueda rápida
   quickSearch: async (query) => {
     try {
-      const response = await api.get('/products/quick-search/', {
-        params: { q: query },
-      });
+      const response = await api.get(`/products/quick-search/?q=${query}`);
       return response.data;
     } catch (error) {
-      throw { error: 'Error en la búsqueda' };
+      throw {
+        error: error.response?.data?.error || 'Error en la búsqueda'
+      };
     }
   },
 
-  // URLs para descargar códigos
-  getQRCodeUrl: (id) => {
-    const token = localStorage.getItem('access_token');
-    return `${process.env.REACT_APP_API_URL}/products/${id}/qrcode/?token=${token}`;
-  },
-
-  getBarcodeUrl: (id) => {
-    const token = localStorage.getItem('access_token');
-    return `${process.env.REACT_APP_API_URL}/products/${id}/barcode/?token=${token}`;
-  },
+  // Obtener historial de stock
+  getStockHistory: async (id) => {
+    try {
+      const response = await api.get(`/products/${id}/stock-history/`);
+      return response.data;
+    } catch (error) {
+      throw {
+        error: error.response?.data?.error || 'Error al obtener historial'
+      };
+    }
+  }
 };
 
 export default productService;

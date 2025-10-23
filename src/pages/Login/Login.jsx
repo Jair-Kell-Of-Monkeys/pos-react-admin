@@ -1,9 +1,9 @@
-import React, { useState, useContext } from 'react';
+// src/pages/Login/Login.jsx
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import toast, { Toaster } from 'react-hot-toast';
 import './Login.css';
-
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -25,13 +25,31 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // ✅ NUEVO: Validar campos vacíos
+    if (!formData.username.trim() || !formData.password.trim()) {
+      toast.error('Por favor completa todos los campos');
+      return;
+    }
+
     setLoading(true);
+    console.log('🔐 Intentando login con usuario:', formData.username);
 
     try {
       const result = await login(formData.username, formData.password);
+      
+      console.log('✅ Login exitoso:', result.user);
       toast.success(`¡Bienvenido ${result.user.username}!`);
-      navigate('/dashboard');
+      
+      // ✅ CORRECCIÓN: Esperar 300ms antes de navegar
+      // Esto da tiempo a que AuthContext actualice el estado completamente
+      setTimeout(() => {
+        console.log('🚀 Navegando a dashboard...');
+        navigate('/dashboard', { replace: true });
+      }, 300);
+
     } catch (err) {
+      console.error('❌ Error en login:', err);
       toast.error(err.error || 'Error al iniciar sesión');
     } finally {
       setLoading(false);
@@ -68,6 +86,7 @@ const Login = () => {
                 onChange={handleChange}
                 placeholder="Ingresa tu usuario"
                 className="login-input"
+                disabled={loading}
                 required
                 autoFocus
               />
@@ -86,12 +105,15 @@ const Login = () => {
                 onChange={handleChange}
                 placeholder="Ingresa tu contraseña"
                 className="login-input"
+                disabled={loading}
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="login-show-password-btn"
+                disabled={loading}
+                tabIndex="-1"
               >
                 {showPassword ? '👁️' : '👁️‍🗨️'}
               </button>

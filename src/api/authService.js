@@ -1,4 +1,45 @@
+// src/api/authService.js
 import api from './axios.config';
+
+// 🔧 Función helper para normalizar el usuario
+const normalizeUser = (userData) => {
+  if (!userData) return null;
+
+  // Si el rol viene como string, convertirlo a objeto
+  if (typeof userData.role === 'string') {
+    userData = {
+      ...userData,
+      role: {
+        id: userData.role === 'admin' ? 1 : 2,
+        name: userData.role
+      }
+    };
+  }
+
+  // Si el rol es un objeto pero no tiene 'name', usar valor por defecto
+  if (userData.role && typeof userData.role === 'object' && !userData.role.name) {
+    userData = {
+      ...userData,
+      role: {
+        id: userData.role.id || null,
+        name: 'empleado'
+      }
+    };
+  }
+
+  // Si no tiene rol en absoluto, asignar uno por defecto
+  if (!userData.role) {
+    userData = {
+      ...userData,
+      role: {
+        id: null,
+        name: 'empleado'
+      }
+    };
+  }
+
+  return userData;
+};
 
 const authService = {
   login: async (username, password) => {
@@ -10,12 +51,20 @@ const authService = {
 
       const { access, refresh, user } = response.data;
 
+      // 🔧 Normalizar usuario antes de guardarlo
+      const normalizedUser = normalizeUser(user);
+
       // Guardar en localStorage
       localStorage.setItem('access_token', access);
       localStorage.setItem('refresh_token', refresh);
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('user', JSON.stringify(normalizedUser));
 
-      return response.data;
+      console.log('✅ Usuario normalizado guardado:', normalizedUser);
+
+      return {
+        ...response.data,
+        user: normalizedUser
+      };
     } catch (error) {
       const errorMsg = error.response?.data?.error || 
                       error.response?.data?.detail || 
@@ -32,7 +81,16 @@ const authService = {
 
   getCurrentUser: () => {
     const userStr = localStorage.getItem('user');
-    return userStr ? JSON.parse(userStr) : null;
+    if (!userStr) return null;
+    
+    try {
+      const user = JSON.parse(userStr);
+      // 🔧 Normalizar usuario al recuperarlo
+      return normalizeUser(user);
+    } catch (error) {
+      console.error('Error al parsear usuario:', error);
+      return null;
+    }
   },
 
   isAuthenticated: () => {
@@ -42,8 +100,10 @@ const authService = {
   getMe: async () => {
     try {
       const response = await api.get('/users/me/');
-      localStorage.setItem('user', JSON.stringify(response.data));
-      return response.data;
+      // 🔧 Normalizar usuario antes de guardarlo
+      const normalizedUser = normalizeUser(response.data);
+      localStorage.setItem('user', JSON.stringify(normalizedUser));
+      return normalizedUser;
     } catch (error) {
       throw { error: 'Error al obtener usuario' };
     }
