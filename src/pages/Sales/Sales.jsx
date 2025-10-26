@@ -12,21 +12,19 @@ const Sales = () => {
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState('create'); // 'create', 'detail'
+  const [modalType, setModalType] = useState('create');
   const [selectedSale, setSelectedSale] = useState(null);
   
   // Filtros
   const [searchTerm, setSearchTerm] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [paymentFilter, setPaymentFilter] = useState('all');
   
   // Nueva venta
   const [cart, setCart] = useState([]);
   const [searchProduct, setSearchProduct] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [paymentMethod, setPaymentMethod] = useState('efectivo');
-  const [notes, setNotes] = useState('');
 
   useEffect(() => {
     loadSales();
@@ -39,10 +37,34 @@ const Sales = () => {
       if (startDate) params.start_date = startDate;
       if (endDate) params.end_date = endDate;
       
-      const data = await saleService.getAll(params);
-      setSales(data);
+      const response = await saleService.getAll(params);
+      
+      console.log('📦 Respuesta del servidor:', response);
+      
+      // Normalizar respuesta según formato de DRF con paginación
+      let salesData = [];
+      
+      if (Array.isArray(response)) {
+        salesData = response;
+      } else if (response && typeof response === 'object') {
+        if (response.results && Array.isArray(response.results)) {
+          salesData = response.results;
+          console.log(`📊 Paginación detectada: ${response.count} ventas totales`);
+        } else if (response.data && Array.isArray(response.data)) {
+          salesData = response.data;
+        }
+      }
+      
+      console.log('✅ Ventas procesadas:', salesData.length, 'ventas');
+      setSales(salesData);
+      
+      if (salesData.length === 0) {
+        toast.info('No hay ventas registradas');
+      }
     } catch (error) {
+      console.error('❌ Error al cargar ventas:', error);
       toast.error(error.error || 'Error al cargar ventas');
+      setSales([]);
     } finally {
       setLoading(false);
     }
@@ -60,68 +82,71 @@ const Sales = () => {
     try {
       const response = await productService.quickSearch(query);
       if (response.success) {
-        setSearchResults(response.products);
+        setSearchResults(response.products || []);
+      } else {
+        setSearchResults([]);
       }
     } catch (error) {
       console.error('Error en búsqueda:', error);
+      setSearchResults([]);
     }
   };
 
   // Agregar producto al carrito
   const addToCart = (product) => {
-    const existingItem = cart.find(item => item.product_id === product.id);
+    const existingItem = cart.find(item => item.product === product.id);
     
     if (existingItem) {
-      // Incrementar cantidad
       if (existingItem.quantity >= product.stock) {
         toast.error('No hay suficiente stock');
         return;
       }
       
       setCart(cart.map(item =>
-        item.product_id === product.id
+        item.product === product.id
           ? { ...item, quantity: item.quantity + 1 }
           : item
       ));
     } else {
-      // Agregar nuevo producto
       if (product.stock <= 0) {
         toast.error('Producto sin stock');
         return;
       }
       
       setCart([...cart, {
-        product_id: product.id,
-        name: product.name,
-        code: product.code,
-        price: product.price,
+        product: product.id,
         quantity: 1,
-        stock_available: product.stock
+        price: product.price,
+        // Datos adicionales solo para mostrar (no se envían al backend)
+        _display: {
+          name: product.name,
+          code: product.code,
+          stock_available: product.stock
+        }
       }]);
     }
     
-    // Limpiar búsqueda
     setSearchProduct('');
     setSearchResults([]);
-    toast.success(`${product.name} agregado al carrito`);
+    toast.success(`${product.name} agregado`);
   };
 
   // Actualizar cantidad en carrito
   const updateQuantity = (productId, newQuantity) => {
-    const item = cart.find(i => i.product_id === productId);
+    const item = cart.find(i => i.product === productId);
     
     if (newQuantity <= 0) {
       removeFromCart(productId);
       return;
     }
     
-    if (newQuantity > item.stock_available) {
+    if (newQuantity > item._display.stock_available) {
       toast.error('Cantidad excede el stock disponible');
       return;
     }
     
     setCart(cart.map(item =>
-      item.product_id === productId
+      item.product === productId
         ? { ...item, quantity: newQuantity }
         : item
     ));
@@ -129,7 +154,8 @@ const Sales = () => {
 
   // Remover del carrito
   const removeFromCart = (productId) => {
-    setCart(cart.filter(item => item.product_id !== productId));
+    setCart(cart.filter(item => item.product !== productId));
+    toast.info('Producto eliminado del carrito');
   };
 
   // Calcular total
@@ -137,48 +163,63 @@ const Sales = () => {
     return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   };
 
-  // Crear venta
+  // Crear venta - Formato correcto para Django REST Framework
   const handleCreateSale = async () => {
     if (cart.length === 0) {
       toast.error('Agrega productos al carrito');
       return;
     }
     
+    // Formato que espera el serializador de Django (SIN payment_method)
     const saleData = {
       items: cart.map(item => ({
-        product_id: item.product_id,
-        quantity: item.quantity
-      })),
-      payment_method: paymentMethod,
-      notes: notes
+        product: item.product,  // ID del producto
+        quantity: item.quantity,
+        price: item.price
+      }))
+      // NO se envía payment_method porque el modelo Sale no lo tiene
     };
     
+    console.log('🛒 Enviando venta:', saleData);
+    console.log('📝 Estructura de items:', saleData.items);
+    
     try {
-      const response = await saleService.createFromScan(saleData);
+      const response = await saleService.create(saleData);
       
-      if (response.success) {
-        toast.success('Venta registrada exitosamente');
-        setCart([]);
-        setPaymentMethod('efectivo');
-        setNotes('');
-        setShowModal(false);
-        loadSales();
-      }
+      console.log('✅ Respuesta de venta:', response);
+      
+      toast.success('¡Venta registrada exitosamente!');
+      setCart([]);
+      setPaymentMethod('efectivo');
+      setShowModal(false);
+      loadSales();
     } catch (error) {
-      toast.error(error.error || 'Error al crear venta');
+      console.error('❌ Error completo al crear venta:', error);
       
-      // Mostrar errores de validación
-      if (error.errors && Array.isArray(error.errors)) {
-        error.errors.forEach(err => {
-          toast.error(err.error || 'Error en producto');
-        });
+      // Manejar errores específicos del backend
+      if (error.validationErrors) {
+        console.error('❌ Errores de validación:', error.validationErrors);
+        
+        const errors = error.validationErrors;
+        
+        if (errors.items) {
+          toast.error(`Error en items: ${JSON.stringify(errors.items)}`);
+        } else if (errors.detail) {
+          toast.error(errors.detail);
+        } else if (errors.non_field_errors) {
+          toast.error(errors.non_field_errors[0]);
+        } else {
+          toast.error(error.error || 'Error al crear venta');
+        }
+      } else {
+        toast.error(error.error || 'Error al crear venta');
       }
     }
   };
 
   // Cancelar venta
   const handleCancelSale = async (saleId) => {
-    if (!window.confirm('¿Estás seguro de cancelar esta venta? El stock será devuelto.')) {
+    if (!window.confirm('¿Estás seguro de cancelar esta venta? El stock será devuelto al inventario.')) {
       return;
     }
     
@@ -186,7 +227,9 @@ const Sales = () => {
       await saleService.cancel(saleId);
       toast.success('Venta cancelada exitosamente');
       loadSales();
+      closeModal();
     } catch (error) {
+      console.error('❌ Error al cancelar venta:', error);
       toast.error(error.error || 'Error al cancelar venta');
     }
   };
@@ -205,7 +248,6 @@ const Sales = () => {
     setSearchProduct('');
     setSearchResults([]);
     setPaymentMethod('efectivo');
-    setNotes('');
     setShowModal(true);
   };
 
@@ -219,22 +261,23 @@ const Sales = () => {
   };
 
   // Filtrar ventas
-  const filteredSales = sales.filter(sale => {
+  const filteredSales = Array.isArray(sales) ? sales.filter(sale => {
+    // Filtrar ventas canceladas
+    if (sale.is_cancelled) return false;
+    
     const matchSearch = 
       sale.id.toString().includes(searchTerm) ||
       sale.user?.username?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchPayment = paymentFilter === 'all' || sale.payment_method === paymentFilter;
-    
-    return matchSearch && matchPayment && !sale.is_cancelled;
-  });
+    return matchSearch;
+  }) : [];
 
   // Formatear moneda
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
       currency: 'MXN',
-    }).format(value);
+    }).format(value || 0);
   };
 
   // Formatear fecha
@@ -288,27 +331,24 @@ const Sales = () => {
         <input
           type="date"
           value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
+          onChange={(e) => {
+            setStartDate(e.target.value);
+            setTimeout(() => loadSales(), 300);
+          }}
           className="date-input"
+          placeholder="Fecha inicio"
         />
 
         <input
           type="date"
           value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
+          onChange={(e) => {
+            setEndDate(e.target.value);
+            setTimeout(() => loadSales(), 300);
+          }}
           className="date-input"
+          placeholder="Fecha fin"
         />
-
-        <select
-          value={paymentFilter}
-          onChange={(e) => setPaymentFilter(e.target.value)}
-          className="filter-select"
-        >
-          <option value="all">Todos los métodos</option>
-          <option value="efectivo">Efectivo</option>
-          <option value="tarjeta">Tarjeta</option>
-          <option value="transferencia">Transferencia</option>
-        </select>
 
         <button onClick={loadSales} className="btn-refresh">
           🔄 Actualizar
@@ -328,7 +368,7 @@ const Sales = () => {
           <span className="stat-icon">💰</span>
           <div>
             <div className="stat-value">
-              {formatCurrency(filteredSales.reduce((sum, s) => sum + parseFloat(s.total_price), 0))}
+              {formatCurrency(filteredSales.reduce((sum, s) => sum + parseFloat(s.total_price || 0), 0))}
             </div>
             <div className="stat-label">Total Vendido</div>
           </div>
@@ -338,7 +378,7 @@ const Sales = () => {
           <div>
             <div className="stat-value">
               {filteredSales.length > 0 
-                ? formatCurrency(filteredSales.reduce((sum, s) => sum + parseFloat(s.total_price), 0) / filteredSales.length)
+                ? formatCurrency(filteredSales.reduce((sum, s) => sum + parseFloat(s.total_price || 0), 0) / filteredSales.length)
                 : '$0.00'}
             </div>
             <div className="stat-label">Promedio por Venta</div>
@@ -373,46 +413,44 @@ const Sales = () => {
                 <th>Fecha</th>
                 <th>Usuario</th>
                 <th>Productos</th>
-                <th>Método Pago</th>
                 <th>Total</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {filteredSales.map(sale => (
-                <tr key={sale.id}>
-                  <td className="id-cell">#{sale.id}</td>
-                  <td>{formatDate(sale.date)}</td>
-                  <td>{sale.user?.username || 'N/A'}</td>
-                  <td>{sale.items?.length || 0} items</td>
-                  <td>
-                    <span className={`payment-badge ${sale.payment_method}`}>
-                      {sale.payment_method === 'efectivo' && '💵'}
-                      {sale.payment_method === 'tarjeta' && '💳'}
-                      {sale.payment_method === 'transferencia' && '🏦'}
-                      {' '}
-                      {sale.payment_method}
-                    </span>
-                  </td>
-                  <td className="total-cell">{formatCurrency(sale.total_price)}</td>
-                  <td className="actions-cell">
-                    <button
-                      onClick={() => openDetailModal(sale)}
-                      className="btn-icon"
-                      title="Ver detalle"
-                    >
-                      👁️
-                    </button>
-                    <button
-                      onClick={() => handleCancelSale(sale.id)}
-                      className="btn-icon danger"
-                      title="Cancelar venta"
-                    >
-                      ❌
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {filteredSales.map(sale => {
+                // Extraer el username correctamente según el formato del backend
+                // El backend devuelve "user_name", no "user.username"
+                const username = sale.user_name || sale.user?.username || 'N/A';
+                
+                return (
+                  <tr key={sale.id}>
+                    <td className="id-cell">#{sale.id}</td>
+                    <td>{formatDate(sale.date)}</td>
+                    <td className="user-cell">{username}</td>
+                    <td>{sale.items?.length || 0} items</td>
+                    <td className="total-cell">{formatCurrency(sale.total_price)}</td>
+                    <td className="actions-cell">
+                      <button
+                        onClick={() => openDetailModal(sale)}
+                        className="btn-icon"
+                        title="Ver detalle"
+                      >
+                        👁️
+                      </button>
+                      {!sale.is_cancelled && (
+                        <button
+                          onClick={() => handleCancelSale(sale.id)}
+                          className="btn-icon danger"
+                          title="Cancelar venta"
+                        >
+                          ❌
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
@@ -441,6 +479,7 @@ const Sales = () => {
                         value={searchProduct}
                         onChange={(e) => handleSearchProduct(e.target.value)}
                         className="search-input"
+                        autoFocus
                       />
                       {searchResults.length > 0 && (
                         <div className="search-results">
@@ -478,16 +517,16 @@ const Sales = () => {
                       <>
                         <div className="cart-items">
                           {cart.map(item => (
-                            <div key={item.product_id} className="cart-item">
+                            <div key={item.product} className="cart-item">
                               <div className="item-info">
-                                <strong>{item.name}</strong>
-                                <span className="item-code">{item.code}</span>
+                                <strong>{item._display.name}</strong>
+                                <span className="item-code">{item._display.code}</span>
                                 <span className="item-price">{formatCurrency(item.price)}</span>
                               </div>
                               
                               <div className="item-controls">
                                 <button
-                                  onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
+                                  onClick={() => updateQuantity(item.product, item.quantity - 1)}
                                   className="qty-btn"
                                 >
                                   −
@@ -495,19 +534,19 @@ const Sales = () => {
                                 <input
                                   type="number"
                                   value={item.quantity}
-                                  onChange={(e) => updateQuantity(item.product_id, parseInt(e.target.value) || 0)}
+                                  onChange={(e) => updateQuantity(item.product, parseInt(e.target.value) || 0)}
                                   className="qty-input"
                                   min="1"
-                                  max={item.stock_available}
+                                  max={item._display.stock_available}
                                 />
                                 <button
-                                  onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
+                                  onClick={() => updateQuantity(item.product, item.quantity + 1)}
                                   className="qty-btn"
                                 >
                                   +
                                 </button>
                                 <button
-                                  onClick={() => removeFromCart(item.product_id)}
+                                  onClick={() => removeFromCart(item.product)}
                                   className="remove-btn"
                                   title="Eliminar"
                                 >
@@ -526,42 +565,6 @@ const Sales = () => {
                           <strong>TOTAL:</strong>
                           <span className="total-amount">{formatCurrency(calculateTotal())}</span>
                         </div>
-
-                        {/* Método de pago */}
-                        <div className="payment-section">
-                          <label>Método de Pago:</label>
-                          <div className="payment-methods">
-                            <button
-                              className={`payment-btn ${paymentMethod === 'efectivo' ? 'active' : ''}`}
-                              onClick={() => setPaymentMethod('efectivo')}
-                            >
-                              💵 Efectivo
-                            </button>
-                            <button
-                              className={`payment-btn ${paymentMethod === 'tarjeta' ? 'active' : ''}`}
-                              onClick={() => setPaymentMethod('tarjeta')}
-                            >
-                              💳 Tarjeta
-                            </button>
-                            <button
-                              className={`payment-btn ${paymentMethod === 'transferencia' ? 'active' : ''}`}
-                              onClick={() => setPaymentMethod('transferencia')}
-                            >
-                              🏦 Transferencia
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Notas */}
-                        <div className="notes-section">
-                          <label>Notas (opcional):</label>
-                          <textarea
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            placeholder="Ej: Cliente frecuente, descuento aplicado..."
-                            rows="2"
-                          />
-                        </div>
                       </>
                     )}
                   </div>
@@ -576,7 +579,7 @@ const Sales = () => {
                     className="btn-primary"
                     disabled={cart.length === 0}
                   >
-                    Registrar Venta
+                    💰 Registrar Venta ({formatCurrency(calculateTotal())})
                   </button>
                 </div>
               </>
@@ -603,13 +606,7 @@ const Sales = () => {
                     </div>
                     <div className="detail-row">
                       <strong>Usuario:</strong>
-                      <span>{selectedSale.user?.username}</span>
-                    </div>
-                    <div className="detail-row">
-                      <strong>Método de Pago:</strong>
-                      <span className={`payment-badge ${selectedSale.payment_method}`}>
-                        {selectedSale.payment_method}
-                      </span>
+                      <span>{selectedSale.user?.username || selectedSale.username || 'N/A'}</span>
                     </div>
                   </div>
 
@@ -621,7 +618,7 @@ const Sales = () => {
                           <div key={index} className="item-detail">
                             <div>
                               <strong>{item.product?.name || 'Producto'}</strong>
-                              <span className="item-quantity">x{item.quantity}</span>
+                              <span className="item-quantity"> x{item.quantity}</span>
                             </div>
                             <div className="item-prices">
                               <span>{formatCurrency(item.price)} c/u</span>
@@ -645,12 +642,14 @@ const Sales = () => {
                   <button onClick={closeModal} className="btn-secondary">
                     Cerrar
                   </button>
-                  <button
-                    onClick={() => handleCancelSale(selectedSale.id)}
-                    className="btn-danger"
-                  >
-                    Cancelar Venta
-                  </button>
+                  {!selectedSale.is_cancelled && (
+                    <button
+                      onClick={() => handleCancelSale(selectedSale.id)}
+                      className="btn-danger"
+                    >
+                      ❌ Cancelar Venta
+                    </button>
+                  )}
                 </div>
               </>
             )}
