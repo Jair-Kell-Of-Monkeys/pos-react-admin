@@ -11,9 +11,9 @@ import Dashboard from './pages/Dashboard/Dashboard';
 import Products from './pages/Products/Products';      
 import Sales from './pages/Sales/Sales';  
 
-// ❌ COMENTAR estas que no existen aún
+// COMENTAR estas que no existen aún
 // import Users from './pages/Users';
-// import Reports from './pages/Reports';
+//import Reports from './pages/Reports/Reports';
 
 import './styles/theme.css';
 import './App.css';
@@ -34,7 +34,7 @@ function App() {
 
             {/* ❌ COMENTAR estas rutas temporalmente */}
             {/* <Route path="/users" element={<Layout><Users /></Layout>} /> */}
-            {/* <Route path="/reports" element={<Layout><Reports /></Layout>} /> */}
+            {/* <Route path="/reports" element={<Layout><Reports /></Layout>} />}
 
             {/* Redirecciones */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />

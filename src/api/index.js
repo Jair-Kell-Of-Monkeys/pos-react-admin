@@ -9,6 +9,7 @@ import userService from './userService';
 import reportService from './reportService';
 import dashboardService from './dashboardService';
 import inventoryService from './inventoryService';
+import systemService from './systemService';
 
 export {
   productService,
@@ -16,7 +17,8 @@ export {
   userService,
   reportService,
   dashboardService,
-  inventoryService
+  inventoryService,
+  systemService
 };
 
 // También exportar como objeto por defecto
@@ -26,5 +28,6 @@ export default {
   users: userService,
   reports: reportService,
   dashboard: dashboardService,
-  inventory: inventoryService
+  inventory: inventoryService,
+  system: systemService
 };
