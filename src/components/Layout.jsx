@@ -1,6 +1,6 @@
 // src/components/Layout.jsx
-import React, { useContext, useEffect } from 'react';
-import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import React, { useContext } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import './Layout.css';
@@ -8,19 +8,6 @@ import './Layout.css';
 const Layout = ({ children }) => {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
-  const location = useLocation();
-
-  // 🔧 COMENTAR TEMPORALMENTE ESTA VERIFICACIÓN
-  /*
-  useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    
-    if (!token) {
-      console.log('⚠️ Layout: No hay token - Redirigiendo a login');
-      navigate('/login', { replace: true });
-    }
-  }, [location.pathname]);
-  */
 
   const handleLogout = () => {
     if (window.confirm('¿Estás seguro de que deseas cerrar sesión?')) {
@@ -29,6 +16,9 @@ const Layout = ({ children }) => {
       toast.success('Sesión cerrada correctamente');
     }
   };
+
+  // ✅ Determinar si es admin
+  const isAdmin = user?.role?.name === 'admin' || user?.role?.name === 'Admin';
 
   return (
     <div className="layout">
@@ -40,6 +30,7 @@ const Layout = ({ children }) => {
         </div>
 
         <nav className="sidebar-nav">
+          {/* ✅ Dashboard - Todos los usuarios */}
           <NavLink
             to="/dashboard"
             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
@@ -48,6 +39,7 @@ const Layout = ({ children }) => {
             <span className="nav-text">Dashboard</span>
           </NavLink>
 
+          {/* ✅ Productos - Todos los usuarios */}
           <NavLink
             to="/products"
             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
@@ -56,6 +48,7 @@ const Layout = ({ children }) => {
             <span className="nav-text">Productos</span>
           </NavLink>
 
+          {/* ✅ Ventas - Todos los usuarios */}
           <NavLink
             to="/sales"
             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
@@ -64,7 +57,19 @@ const Layout = ({ children }) => {
             <span className="nav-text">Ventas</span>
           </NavLink>
 
-          {(user?.role?.name === 'admin' || user?.role?.name === 'Admin') && (
+          {/* ✅ Inventario - Solo Admin */}
+          {isAdmin && (
+            <NavLink
+              to="/inventory"
+              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            >
+              <span className="nav-icon">📦</span>
+              <span className="nav-text">Inventario</span>
+            </NavLink>
+          )}
+
+          {/* ✅ Empleados - Solo Admin */}
+          {isAdmin && (
             <NavLink
               to="/users"
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
@@ -74,13 +79,27 @@ const Layout = ({ children }) => {
             </NavLink>
           )}
 
-          <NavLink
-            to="/reports"
-            className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-          >
-            <span className="nav-icon">📈</span>
-            <span className="nav-text">Reportes</span>
-          </NavLink>
+          {/* ✅ Reportes - Solo Admin */}
+          {isAdmin && (
+            <NavLink
+              to="/reports"
+              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            >
+              <span className="nav-icon">📈</span>
+              <span className="nav-text">Reportes</span>
+            </NavLink>
+          )}
+
+          {/* ✅ Sistema - Solo Admin */}
+          {isAdmin && (
+            <NavLink
+              to="/system"
+              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            >
+              <span className="nav-icon">🔧</span>
+              <span className="nav-text">Sistema</span>
+            </NavLink>
+          )}
         </nav>
 
         <div className="sidebar-footer">

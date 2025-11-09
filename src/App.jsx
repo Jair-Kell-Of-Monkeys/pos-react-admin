@@ -12,7 +12,7 @@ import Products from './pages/Products/Products';
 import Sales from './pages/Sales/Sales';  
 
 // import Users from './pages/Users';
-import Reports from './pages/Reports/Reports';
+// import Reports from './pages/Reports/Reports';
 
 import './styles/theme.css';
 import './App.css';

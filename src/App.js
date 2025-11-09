@@ -9,11 +9,13 @@ import Layout from './components/Layout';
 import Login from './pages/Login/Login';
 import Dashboard from './pages/Dashboard/Dashboard';  
 import Products from './pages/Products/Products';      
-import Sales from './pages/Sales/Sales';  
+import Sales from './pages/Sales/Sales';
+import Users from './pages/Users/Users';  
+import Reports from './pages/Reports/Reports';
+import System from './pages/System/System';
+import Inventory from './pages/Inventory/Inventory';
 
-// COMENTAR estas que no existen aún
-// import Users from './pages/Users';
-//import Reports from './pages/Reports/Reports';
+
 
 import './styles/theme.css';
 import './App.css';
@@ -24,17 +26,14 @@ function App() {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
-            {/* Login sin protección */}
             <Route path="/login" element={<Login />} />
-
-            {/* Rutas que SÍ funcionan */}
             <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
             <Route path="/products" element={<Layout><Products /></Layout>} />
             <Route path="/sales" element={<Layout><Sales /></Layout>} />
-
-            {/* ❌ COMENTAR estas rutas temporalmente */}
-            {/* <Route path="/users" element={<Layout><Users /></Layout>} /> */}
-            {/* <Route path="/reports" element={<Layout><Reports /></Layout>} />}
+            <Route path="/inventory" element={<Layout><Inventory /></Layout>} />
+            <Route path="/users" element={<Layout><Users /></Layout>} />
+            <Route path="/reports" element={<Layout><Reports /></Layout>} />
+            <Route path="/system" element={<Layout><System /></Layout>} />
 
             {/* Redirecciones */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />

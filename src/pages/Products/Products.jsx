@@ -464,33 +464,84 @@ const Products = () => {
                 <form onSubmit={handleSubmit} className="modal-body">
                   <div className="form-group">
                     <label>Nombre *</label>
-                    <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required placeholder="Nombre del producto" />
+                    <input 
+                      type="text" 
+                      value={formData.name} 
+                      onChange={(e) => setFormData({...formData, name: e.target.value})} 
+                      required 
+                      placeholder="Nombre del producto" 
+                    />
                   </div>
+                  
                   <div className="form-group">
                     <label>Categoría</label>
-                    <input type="text" value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} placeholder="Ej: Ferretería" list="categories" />
+                    <input 
+                      type="text" 
+                      value={formData.category} 
+                      onChange={(e) => setFormData({...formData, category: e.target.value})} 
+                      placeholder="Ej: Ferretería" 
+                      list="categories" 
+                    />
                     <datalist id="categories">
                       {categories.map(cat => <option key={cat} value={cat} />)}
                     </datalist>
                   </div>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Precio *</label>
-                      <input type="number" step="0.01" min="0" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} required placeholder="0.00" />
-                    </div>
-                    <div className="form-group">
-                      <label>Stock *</label>
-                      <input type="number" min="0" value={formData.stock} onChange={(e) => setFormData({...formData, stock: e.target.value})} required placeholder="0" />
-                    </div>
+
+                  <div className="form-group">
+                    <label>Precio *</label>
+                    <input 
+                      type="number" 
+                      step="0.01" 
+                      min="0" 
+                      value={formData.price} 
+                      onChange={(e) => setFormData({...formData, price: e.target.value})} 
+                      required 
+                      placeholder="0.00" 
+                    />
                   </div>
+
+                  {/* ✅ Solo mostrar campo de stock al CREAR producto */}
+                  {modalType === 'create' && (
+                    <div className="form-group">
+                      <label>Stock Inicial *</label>
+                      <input 
+                        type="number" 
+                        min="0" 
+                        value={formData.stock} 
+                        onChange={(e) => setFormData({...formData, stock: e.target.value})} 
+                        required 
+                        placeholder="0" 
+                      />
+                      <small className="form-hint">
+                        El stock inicial del producto. Puedes ajustarlo después desde "Ajustar Stock"
+                      </small>
+                    </div>
+                  )}
+
+                  {/* ✅ Información del stock actual al EDITAR (solo lectura) */}
+                  {modalType === 'edit' && selectedProduct && (
+                    <div className="form-info-box">
+                      <div className="info-row">
+                        <span className="info-label">📦 Stock Actual:</span>
+                        <span className="info-value">{selectedProduct.stock || 0} unidades</span>
+                      </div>
+                      <small className="form-hint">
+                        Para modificar el stock, usa el botón "Ajustar Stock" 📊
+                      </small>
+                    </div>
+                  )}
+
                   <div className="modal-footer">
-                    <button type="button" onClick={closeModal} className="btn-secondary">Cancelar</button>
-                    <button type="submit" className="btn-primary">{modalType === 'create' ? 'Crear Producto' : 'Guardar Cambios'}</button>
+                    <button type="button" onClick={closeModal} className="btn-secondary">
+                      Cancelar
+                    </button>
+                    <button type="submit" className="btn-primary">
+                      {modalType === 'create' ? 'Crear Producto' : 'Guardar Cambios'}
+                    </button>
                   </div>
                 </form>
               </>
             )}
-
             {modalType === 'detail' && selectedProduct && (
               <>
                 <div className="modal-header">

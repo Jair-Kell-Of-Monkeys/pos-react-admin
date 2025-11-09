@@ -4,10 +4,13 @@ import dashboardService from '../../api/dashboardService';
 import {
   LineChart,
   Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
 } from 'recharts';
 import toast, { Toaster } from 'react-hot-toast';
@@ -20,6 +23,7 @@ const Dashboard = () => {
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [chartPeriod, setChartPeriod] = useState('week');
+  const [chartType, setChartType] = useState('line'); // 'line' o 'bar'
 
   useEffect(() => {
     loadDashboard();
@@ -34,6 +38,7 @@ const Dashboard = () => {
     try {
       const data = await dashboardService.getSummary();
       setDashboardData(data);
+      toast.success('Dashboard actualizado');
     } catch (error) {
       toast.error(error.error || 'Error al cargar dashboard');
     } finally {
@@ -44,9 +49,54 @@ const Dashboard = () => {
   const loadChartData = async () => {
     try {
       const data = await dashboardService.getSalesChart(chartPeriod);
-      setChartData(data.data || []);
+      
+      // Transformar datos para mejor visualización
+      const transformedData = (data.data || []).map(item => ({
+        ...item,
+        period_display: formatPeriodLabel(item.period, chartPeriod),
+        total_formatted: parseFloat(item.total || 0)
+      }));
+      
+      setChartData(transformedData);
     } catch (error) {
       console.error('Error al cargar gráfica:', error);
+      toast.error('Error al cargar gráfica de ventas');
+    }
+  };
+
+  const formatPeriodLabel = (period, type) => {
+    if (!period) return '';
+    
+    const date = new Date(period);
+    
+    // Verificar que la fecha sea válida
+    if (isNaN(date.getTime())) {
+      return period; // Devolver el período original si no es una fecha válida
+    }
+    
+    switch(type) {
+      case 'day':
+        // Formato: "Lun 8"
+        return date.toLocaleDateString('es-MX', { 
+          weekday: 'short', 
+          day: 'numeric' 
+        }).replace('.', '');
+        
+      case 'week':
+        // Formato: "8 Nov" (día y mes)
+        return date.toLocaleDateString('es-MX', { 
+          day: 'numeric', 
+          month: 'short' 
+        }).replace('.', '');
+        
+      case 'month':
+        // Formato: "Ene"
+        return date.toLocaleDateString('es-MX', { 
+          month: 'short' 
+        }).replace('.', '');
+        
+      default:
+        return period;
     }
   };
 
@@ -55,6 +105,21 @@ const Dashboard = () => {
       style: 'currency',
       currency: 'MXN',
     }).format(value);
+  };
+
+  // Tooltip personalizado para la gráfica
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="custom-tooltip">
+          <p className="tooltip-label">{label}</p>
+          <p className="tooltip-value">
+            <strong>Ventas:</strong> {formatCurrency(payload[0].value)}
+          </p>
+        </div>
+      );
+    }
+    return null;
   };
 
   if (loading) {
@@ -77,15 +142,15 @@ const Dashboard = () => {
     <div className="dashboard-container">
       <Toaster position="top-right" />
 
-      {/* Header simple - SIN botón de logout (ya está en Layout) */}
+      {/* Header */}
       <header className="dashboard-header">
         <div>
-          <h1 className="header-title">Dashboard</h1>
+          <h1 className="header-title">📊 Dashboard</h1>
           <p className="header-subtitle">
-            Bienvenido, <strong>{user?.username}</strong>
+            Bienvenido, <strong>{user?.username}</strong> ({user?.role?.name || 'Usuario'})
           </p>
         </div>
-        <button onClick={loadDashboard} className="refresh-btn">
+        <button onClick={loadDashboard} className="refresh-btn" disabled={loading}>
           🔄 Actualizar
         </button>
       </header>
@@ -95,30 +160,30 @@ const Dashboard = () => {
         <MetricCard
           title="Ventas de Hoy"
           value={formatCurrency(todaySales.total || 0)}
-          subtitle={`${todaySales.count || 0} ventas`}
+          subtitle={`${todaySales.count || 0} ${todaySales.count === 1 ? 'venta' : 'ventas'}`}
           icon="💰"
           color="#10b981"
         />
         <MetricCard
           title="Ventas de la Semana"
           value={formatCurrency(weekSales.total || 0)}
-          subtitle={`${weekSales.count || 0} ventas`}
+          subtitle={`${weekSales.count || 0} ${weekSales.count === 1 ? 'venta' : 'ventas'}`}
           icon="📅"
           color="#3b82f6"
         />
         <MetricCard
           title="Ventas del Mes"
           value={formatCurrency(monthSales.total || 0)}
-          subtitle={`${monthSales.count || 0} ventas`}
+          subtitle={`${monthSales.count || 0} ${monthSales.count === 1 ? 'venta' : 'ventas'}`}
           icon="📈"
           color="#8b5cf6"
           trend={comparison.trend}
           trendValue={comparison.percentage_change}
         />
         <MetricCard
-          title="Stock Bajo"
+          title="Productos Stock Bajo"
           value={lowStock.count || 0}
-          subtitle="productos críticos"
+          subtitle={lowStock.count === 1 ? 'producto crítico' : 'productos críticos'}
           icon="⚠️"
           color="#f59e0b"
         />
@@ -127,49 +192,133 @@ const Dashboard = () => {
       {/* Gráfica y Stock Bajo */}
       <div className="content-grid">
         {/* Gráfica de ventas */}
-        <div className="dashboard-card">
+        <div className="dashboard-card chart-card">
           <div className="card-header">
-            <h2 className="card-title">Ventas en el Tiempo</h2>
-            <select
-              value={chartPeriod}
-              onChange={(e) => setChartPeriod(e.target.value)}
-              className="period-select"
-            >
-              <option value="day">Últimos 7 días</option>
-              <option value="week">Últimas 4 semanas</option>
-              <option value="month">Últimos 12 meses</option>
-            </select>
+            <div>
+              <h2 className="card-title">📈 Tendencia de Ventas</h2>
+              <p className="card-subtitle">Evolución de ingresos por período</p>
+            </div>
+            <div className="chart-controls">
+              <select
+                value={chartPeriod}
+                onChange={(e) => setChartPeriod(e.target.value)}
+                className="period-select"
+              >
+                <option value="day">Últimos 7 días</option>
+                <option value="week">Últimas 4 semanas</option>
+                <option value="month">Últimos 12 meses</option>
+              </select>
+              <div className="chart-type-toggle">
+                <button
+                  className={chartType === 'line' ? 'active' : ''}
+                  onClick={() => setChartType('line')}
+                  title="Gráfica de línea"
+                >
+                  📉
+                </button>
+                <button
+                  className={chartType === 'bar' ? 'active' : ''}
+                  onClick={() => setChartType('bar')}
+                  title="Gráfica de barras"
+                >
+                  📊
+                </button>
+              </div>
+            </div>
           </div>
+          
           <div className="chart-container">
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="period"
-                  tick={{ fontSize: 12 }}
-                  tickFormatter={(value) => value.slice(5)}
-                />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip
-                  formatter={(value) => formatCurrency(value)}
-                  labelStyle={{ color: '#000' }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="total"
-                  stroke="#3b82f6"
-                  strokeWidth={3}
-                  dot={{ fill: '#3b82f6', r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                {chartType === 'line' ? (
+                  <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis
+                      dataKey="period_display"
+                      tick={{ fontSize: 12, fill: '#6b7280' }}
+                      stroke="#9ca3af"
+                    />
+                    <YAxis
+                      tick={{ fontSize: 12, fill: '#6b7280' }}
+                      stroke="#9ca3af"
+                      tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Line
+                      type="monotone"
+                      dataKey="total_formatted"
+                      stroke="#3b82f6"
+                      strokeWidth={3}
+                      dot={{ fill: '#3b82f6', r: 5 }}
+                      activeDot={{ r: 7 }}
+                      name="Ventas"
+                    />
+                  </LineChart>
+                ) : (
+                  <BarChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis
+                      dataKey="period_display"
+                      tick={{ fontSize: 12, fill: '#6b7280' }}
+                      stroke="#9ca3af"
+                    />
+                    <YAxis
+                      tick={{ fontSize: 12, fill: '#6b7280' }}
+                      stroke="#9ca3af"
+                      tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Bar
+                      dataKey="total_formatted"
+                      fill="#3b82f6"
+                      radius={[8, 8, 0, 0]}
+                      name="Ventas"
+                    />
+                  </BarChart>
+                )}
+              </ResponsiveContainer>
+            ) : (
+              <div className="empty-chart">
+                <p>📭 No hay datos de ventas para mostrar</p>
+                <small>Realiza algunas ventas para ver las estadísticas</small>
+              </div>
+            )}
           </div>
+
+          {/* Resumen de estadísticas debajo de la gráfica */}
+          {chartData.length > 0 && (
+            <div className="chart-stats">
+              <div className="stat-item">
+                <span className="stat-label">Total del período:</span>
+                <span className="stat-value">
+                  {formatCurrency(chartData.reduce((sum, item) => sum + item.total_formatted, 0))}
+                </span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Promedio:</span>
+                <span className="stat-value">
+                  {formatCurrency(chartData.reduce((sum, item) => sum + item.total_formatted, 0) / chartData.length)}
+                </span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Mejor día:</span>
+                <span className="stat-value">
+                  {formatCurrency(Math.max(...chartData.map(item => item.total_formatted)))}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Productos con stock bajo */}
         <div className="dashboard-card">
-          <h2 className="card-title">Productos con Stock Bajo</h2>
+          <div className="card-header-simple">
+            <h2 className="card-title">⚠️ Productos con Stock Bajo</h2>
+            <span className="stock-count-badge">
+              {lowStock.count || 0}
+            </span>
+          </div>
+          
           <div className="low-stock-list">
             {lowStock.products && lowStock.products.length > 0 ? (
               lowStock.products.map((product) => (
@@ -177,37 +326,68 @@ const Dashboard = () => {
                   key={product.id}
                   className={`low-stock-item ${product.status === 'critical' ? 'critical' : 'warning'}`}
                 >
-                  <div>
+                  <div className="product-details">
                     <div className="product-name">{product.name}</div>
-                    <div className="product-code">{product.code}</div>
+                    <div className="product-code">Código: {product.code}</div>
                   </div>
-                  <div className={`stock-badge ${product.status === 'critical' ? 'critical' : 'warning'}`}>
-                    {product.stock} unidades
+                  <div className="stock-info">
+                    <div className={`stock-badge ${product.status === 'critical' ? 'critical' : 'warning'}`}>
+                      {product.stock} {product.stock === 1 ? 'unidad' : 'unidades'}
+                    </div>
+                    <span className={`status-indicator ${product.status}`}>
+                      {product.status === 'critical' ? '🔴 Crítico' : '🟡 Bajo'}
+                    </span>
                   </div>
                 </div>
               ))
             ) : (
-              <p className="empty-message">
-                ✅ No hay productos con stock bajo
-              </p>
+              <div className="empty-message">
+                <span className="empty-icon">✅</span>
+                <p>¡Todo bien!</p>
+                <small>No hay productos con stock bajo</small>
+              </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Información del inventario */}
-      <div className="inventory-info">
-        <div className="inventory-card">
-          <span className="inventory-label">Total de Productos:</span>
-          <span className="inventory-value">
-            {inventorySummary.total_products || 0}
-          </span>
-        </div>
-        <div className="inventory-card">
-          <span className="inventory-label">Valor del Inventario:</span>
-          <span className="inventory-value">
-            {formatCurrency(inventorySummary.total_value || 0)}
-          </span>
+      {/* Información del inventario - DEBAJO de todo */}
+      <div className="inventory-section">
+        <h2 className="inventory-section-title">📊 Resumen del Negocio</h2>
+        <div className="inventory-grid">
+          <div className="inventory-card">
+            <div className="inventory-icon">📦</div>
+            <div className="inventory-content">
+              <div className="inventory-label">Total de Productos</div>
+              <div className="inventory-value">
+                {inventorySummary.total_products || 0}
+              </div>
+              <div className="inventory-sublabel">En catálogo</div>
+            </div>
+          </div>
+          <div className="inventory-card">
+            <div className="inventory-icon">💎</div>
+            <div className="inventory-content">
+              <div className="inventory-label">Valor del Inventario</div>
+              <div className="inventory-value">
+                {formatCurrency(inventorySummary.total_value || 0)}
+              </div>
+              <div className="inventory-sublabel">Inversión total</div>
+            </div>
+          </div>
+          <div className="inventory-card">
+            <div className="inventory-icon">📈</div>
+            <div className="inventory-content">
+              <div className="inventory-label">Promedio por Venta</div>
+              <div className="inventory-value">
+                {monthSales.count > 0 
+                  ? formatCurrency((monthSales.total || 0) / monthSales.count)
+                  : '$0.00'
+                }
+              </div>
+              <div className="inventory-sublabel">Ticket promedio</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -218,14 +398,14 @@ const Dashboard = () => {
 const MetricCard = ({ title, value, subtitle, icon, color, trend, trendValue }) => (
   <div className="metric-card">
     <div className="metric-icon" style={{ backgroundColor: `${color}20` }}>
-      <span>{icon}</span>
+      <span style={{ filter: 'grayscale(0)' }}>{icon}</span>
     </div>
     <div className="metric-content">
       <div className="metric-title">{title}</div>
       <div className="metric-value" style={{ color }}>{value}</div>
       <div className="metric-subtitle">
         {subtitle}
-        {trend && (
+        {trend && trendValue !== undefined && (
           <span className={`trend-indicator ${trend}`}>
             {trend === 'up' ? '↗' : '↘'} {Math.abs(trendValue).toFixed(1)}%
           </span>

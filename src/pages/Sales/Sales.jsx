@@ -596,45 +596,80 @@ const Sales = () => {
                 <div className="modal-body sale-detail">
                   <div className="detail-section">
                     <h3>Información General</h3>
-                    <div className="detail-row">
-                      <strong>ID:</strong>
-                      <span>#{selectedSale.id}</span>
-                    </div>
-                    <div className="detail-row">
-                      <strong>Fecha:</strong>
-                      <span>{formatDate(selectedSale.date)}</span>
-                    </div>
-                    <div className="detail-row">
-                      <strong>Usuario:</strong>
-                      <span>{selectedSale.user?.username || selectedSale.username || 'N/A'}</span>
+                    <div className="detail-grid">
+                      <div className="detail-item">
+                        <span className="detail-label">ID:</span>
+                        <span className="detail-value">#{selectedSale.id}</span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="detail-label">Fecha:</span>
+                        <span className="detail-value">{formatDate(selectedSale.date)}</span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="detail-label">Usuario:</span>
+                        <span className="detail-value">
+                          {selectedSale.user_name || 
+                          selectedSale.user?.username || 
+                          selectedSale.username || 
+                          'N/A'}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="detail-section">
+                  <div className="detail-section products-section">
                     <h3>Productos Vendidos</h3>
                     <div className="items-list">
                       {selectedSale.items && selectedSale.items.length > 0 ? (
-                        selectedSale.items.map((item, index) => (
-                          <div key={index} className="item-detail">
-                            <div>
-                              <strong>{item.product?.name || 'Producto'}</strong>
-                              <span className="item-quantity"> x{item.quantity}</span>
+                        selectedSale.items.map((item, index) => {
+                          // ✅ Calcular precio unitario correcto
+                          const unitPrice = parseFloat(item.price) || 
+                                          (parseFloat(item.subtotal) / item.quantity) || 
+                                          0;
+                          const subtotal = parseFloat(item.subtotal) || 
+                                          (unitPrice * item.quantity) || 
+                                          0;
+                          
+                          return (
+                            <div key={index} className="item-card">
+                              <div className="item-main">
+                                <div className="item-header">
+                                  <span className="item-name">
+                                    {item.product_name || 
+                                    item.product?.name || 
+                                    item.name || 
+                                    `Producto #${item.product || 'N/A'}`}
+                                  </span>
+                                  <span className="item-qty-badge">× {item.quantity}</span>
+                                </div>
+                                
+                                <div className="item-pricing">
+                                  <div className="pricing-detail">
+                                    <span className="pricing-label">Precio unitario:</span>
+                                    <span className="pricing-value">{formatCurrency(unitPrice)}</span>
+                                  </div>
+                                  <div className="pricing-detail subtotal">
+                                    <span className="pricing-label">Subtotal:</span>
+                                    <span className="pricing-value-main">{formatCurrency(subtotal)}</span>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            <div className="item-prices">
-                              <span>{formatCurrency(item.price)} c/u</span>
-                              <strong>{formatCurrency(item.subtotal)}</strong>
-                            </div>
-                          </div>
-                        ))
+                          );
+                        })
                       ) : (
-                        <p>No hay productos</p>
+                        <div className="no-items">
+                          <p>⚠️ No hay productos registrados en esta venta</p>
+                        </div>
                       )}
                     </div>
                   </div>
 
-                  <div className="detail-total">
-                    <strong>TOTAL:</strong>
-                    <span className="total-amount">{formatCurrency(selectedSale.total_price)}</span>
+                  <div className="detail-total-section">
+                    <div className="total-box">
+                      <span className="total-label">TOTAL:</span>
+                      <span className="total-value">{formatCurrency(selectedSale.total_price)}</span>
+                    </div>
                   </div>
                 </div>
 
