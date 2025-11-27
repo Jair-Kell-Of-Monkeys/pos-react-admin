@@ -278,7 +278,6 @@ const Users = () => {
                       title="Ver detalles"
                     >
                       <i className='bx bx-show'></i>
-                      <span>Ver Detalles</span>
                     </button>
                     <button 
                       onClick={() => handleResetPassword(employee.id)}
