@@ -10,7 +10,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from 'recharts';
 import toast, { Toaster } from 'react-hot-toast';
@@ -23,7 +22,7 @@ const Dashboard = () => {
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [chartPeriod, setChartPeriod] = useState('week');
-  const [chartType, setChartType] = useState('line'); // 'line' o 'bar'
+  const [chartType, setChartType] = useState('line');
 
   useEffect(() => {
     loadDashboard();
@@ -50,7 +49,6 @@ const Dashboard = () => {
     try {
       const data = await dashboardService.getSalesChart(chartPeriod);
       
-      // Transformar datos para mejor visualización
       const transformedData = (data.data || []).map(item => ({
         ...item,
         period_display: formatPeriodLabel(item.period, chartPeriod),
@@ -69,28 +67,24 @@ const Dashboard = () => {
     
     const date = new Date(period);
     
-    // Verificar que la fecha sea válida
     if (isNaN(date.getTime())) {
-      return period; // Devolver el período original si no es una fecha válida
+      return period;
     }
     
     switch(type) {
       case 'day':
-        // Formato: "Lun 8"
         return date.toLocaleDateString('es-MX', { 
           weekday: 'short', 
           day: 'numeric' 
         }).replace('.', '');
         
       case 'week':
-        // Formato: "8 Nov" (día y mes)
         return date.toLocaleDateString('es-MX', { 
           day: 'numeric', 
           month: 'short' 
         }).replace('.', '');
         
       case 'month':
-        // Formato: "Ene"
         return date.toLocaleDateString('es-MX', { 
           month: 'short' 
         }).replace('.', '');
@@ -107,7 +101,6 @@ const Dashboard = () => {
     }).format(value);
   };
 
-  // Tooltip personalizado para la gráfica
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
@@ -144,14 +137,22 @@ const Dashboard = () => {
 
       {/* Header */}
       <header className="dashboard-header">
-        <div>
-          <h1 className="header-title">📊 Dashboard</h1>
+        <div className="header-content">
+          <h1 className="header-title">
+            <i className='bx bxs-dashboard'></i>
+            Dashboard
+          </h1>
           <p className="header-subtitle">
-            Bienvenido, <strong>{user?.username}</strong> ({user?.role?.name || 'Usuario'})
+            Bienvenido, <strong>{user?.username}</strong>
+            <span className="user-role-badge">
+              <i className='bx bxs-badge-check'></i>
+              {user?.role?.name || 'Usuario'}
+            </span>
           </p>
         </div>
         <button onClick={loadDashboard} className="refresh-btn" disabled={loading}>
-          🔄 Actualizar
+          <i className='bx bx-refresh'></i>
+          <span>Actualizar</span>
         </button>
       </header>
 
@@ -161,21 +162,21 @@ const Dashboard = () => {
           title="Ventas de Hoy"
           value={formatCurrency(todaySales.total || 0)}
           subtitle={`${todaySales.count || 0} ${todaySales.count === 1 ? 'venta' : 'ventas'}`}
-          icon="💰"
+          icon="bx-money"
           color="#10b981"
         />
         <MetricCard
           title="Ventas de la Semana"
           value={formatCurrency(weekSales.total || 0)}
           subtitle={`${weekSales.count || 0} ${weekSales.count === 1 ? 'venta' : 'ventas'}`}
-          icon="📅"
+          icon="bx-calendar"
           color="#3b82f6"
         />
         <MetricCard
           title="Ventas del Mes"
           value={formatCurrency(monthSales.total || 0)}
           subtitle={`${monthSales.count || 0} ${monthSales.count === 1 ? 'venta' : 'ventas'}`}
-          icon="📈"
+          icon="bx-trending-up"
           color="#8b5cf6"
           trend={comparison.trend}
           trendValue={comparison.percentage_change}
@@ -184,7 +185,7 @@ const Dashboard = () => {
           title="Productos Stock Bajo"
           value={lowStock.count || 0}
           subtitle={lowStock.count === 1 ? 'producto crítico' : 'productos críticos'}
-          icon="⚠️"
+          icon="bx-error"
           color="#f59e0b"
         />
       </div>
@@ -194,8 +195,11 @@ const Dashboard = () => {
         {/* Gráfica de ventas */}
         <div className="dashboard-card chart-card">
           <div className="card-header">
-            <div>
-              <h2 className="card-title">📈 Tendencia de Ventas</h2>
+            <div className="card-header-content">
+              <h2 className="card-title">
+                <i className='bx bx-line-chart'></i>
+                Tendencia de Ventas
+              </h2>
               <p className="card-subtitle">Evolución de ingresos por período</p>
             </div>
             <div className="chart-controls">
@@ -214,14 +218,14 @@ const Dashboard = () => {
                   onClick={() => setChartType('line')}
                   title="Gráfica de línea"
                 >
-                  📉
+                  <i className='bx bx-line-chart'></i>
                 </button>
                 <button
                   className={chartType === 'bar' ? 'active' : ''}
                   onClick={() => setChartType('bar')}
                   title="Gráfica de barras"
                 >
-                  📊
+                  <i className='bx bx-bar-chart-alt-2'></i>
                 </button>
               </div>
             </div>
@@ -279,41 +283,53 @@ const Dashboard = () => {
               </ResponsiveContainer>
             ) : (
               <div className="empty-chart">
-                <p>📭 No hay datos de ventas para mostrar</p>
+                <i className='bx bx-bar-chart-alt empty-chart-icon'></i>
+                <p>No hay datos de ventas para mostrar</p>
                 <small>Realiza algunas ventas para ver las estadísticas</small>
               </div>
             )}
           </div>
 
-          {/* Resumen de estadísticas debajo de la gráfica */}
           {chartData.length > 0 && (
             <div className="chart-stats">
               <div className="stat-item">
-                <span className="stat-label">Total del período:</span>
-                <span className="stat-value">
-                  {formatCurrency(chartData.reduce((sum, item) => sum + item.total_formatted, 0))}
-                </span>
+                <i className='bx bx-dollar-circle stat-icon'></i>
+                <div className="stat-content">
+                  <span className="stat-label">Total del período</span>
+                  <span className="stat-value">
+                    {formatCurrency(chartData.reduce((sum, item) => sum + item.total_formatted, 0))}
+                  </span>
+                </div>
               </div>
               <div className="stat-item">
-                <span className="stat-label">Promedio:</span>
-                <span className="stat-value">
-                  {formatCurrency(chartData.reduce((sum, item) => sum + item.total_formatted, 0) / chartData.length)}
-                </span>
+                <i className='bx bx-trending-up stat-icon'></i>
+                <div className="stat-content">
+                  <span className="stat-label">Promedio</span>
+                  <span className="stat-value">
+                    {formatCurrency(chartData.reduce((sum, item) => sum + item.total_formatted, 0) / chartData.length)}
+                  </span>
+                </div>
               </div>
               <div className="stat-item">
-                <span className="stat-label">Mejor día:</span>
-                <span className="stat-value">
-                  {formatCurrency(Math.max(...chartData.map(item => item.total_formatted)))}
-                </span>
+                <i className='bx bx-trophy stat-icon'></i>
+                <div className="stat-content">
+                  <span className="stat-label">Mejor día</span>
+                  <span className="stat-value">
+                    {formatCurrency(Math.max(...chartData.map(item => item.total_formatted)))}
+                  </span>
+                </div>
               </div>
             </div>
           )}
         </div>
 
         {/* Productos con stock bajo */}
-        <div className="dashboard-card">
+        <div className="dashboard-card low-stock-card">
           <div className="card-header-simple">
-            <h2 className="card-title">⚠️ Productos con Stock Bajo</h2>
+            <h2 className="card-title">
+              <i className='bx bx-error-circle'></i>
+              Stock Bajo
+            </h2>
             <span className="stock-count-badge">
               {lowStock.count || 0}
             </span>
@@ -326,23 +342,30 @@ const Dashboard = () => {
                   key={product.id}
                   className={`low-stock-item ${product.status === 'critical' ? 'critical' : 'warning'}`}
                 >
+                  <div className="product-icon-wrapper">
+                    <i className={`bx bxs-package product-icon ${product.status}`}></i>
+                  </div>
                   <div className="product-details">
                     <div className="product-name">{product.name}</div>
-                    <div className="product-code">Código: {product.code}</div>
+                    <div className="product-code">
+                      <i className='bx bx-barcode'></i>
+                      {product.code}
+                    </div>
                   </div>
                   <div className="stock-info">
                     <div className={`stock-badge ${product.status === 'critical' ? 'critical' : 'warning'}`}>
                       {product.stock} {product.stock === 1 ? 'unidad' : 'unidades'}
                     </div>
                     <span className={`status-indicator ${product.status}`}>
-                      {product.status === 'critical' ? '🔴 Crítico' : '🟡 Bajo'}
+                      <i className={`bx ${product.status === 'critical' ? 'bxs-error-circle' : 'bxs-error'}`}></i>
+                      {product.status === 'critical' ? 'Crítico' : 'Bajo'}
                     </span>
                   </div>
                 </div>
               ))
             ) : (
               <div className="empty-message">
-                <span className="empty-icon">✅</span>
+                <i className='bx bxs-check-circle empty-icon'></i>
                 <p>¡Todo bien!</p>
                 <small>No hay productos con stock bajo</small>
               </div>
@@ -351,32 +374,47 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Información del inventario - DEBAJO de todo */}
+      {/* Resumen del Negocio */}
       <div className="inventory-section">
-        <h2 className="inventory-section-title">📊 Resumen del Negocio</h2>
+        <h2 className="inventory-section-title">
+          <i className='bx bxs-bar-chart-square'></i>
+          Resumen del Negocio
+        </h2>
         <div className="inventory-grid">
           <div className="inventory-card">
-            <div className="inventory-icon">📦</div>
+            <div className="inventory-icon">
+              <i className='bx bxs-package'></i>
+            </div>
             <div className="inventory-content">
               <div className="inventory-label">Total de Productos</div>
               <div className="inventory-value">
                 {inventorySummary.total_products || 0}
               </div>
-              <div className="inventory-sublabel">En catálogo</div>
+              <div className="inventory-sublabel">
+                <i className='bx bx-shopping-bag'></i>
+                En catálogo
+              </div>
             </div>
           </div>
           <div className="inventory-card">
-            <div className="inventory-icon">💎</div>
+            <div className="inventory-icon">
+              <i className='bx bxs-wallet'></i>
+            </div>
             <div className="inventory-content">
               <div className="inventory-label">Valor del Inventario</div>
               <div className="inventory-value">
                 {formatCurrency(inventorySummary.total_value || 0)}
               </div>
-              <div className="inventory-sublabel">Inversión total</div>
+              <div className="inventory-sublabel">
+                <i className='bx bx-dollar-circle'></i>
+                Inversión total
+              </div>
             </div>
           </div>
           <div className="inventory-card">
-            <div className="inventory-icon">📈</div>
+            <div className="inventory-icon">
+              <i className='bx bxs-receipt'></i>
+            </div>
             <div className="inventory-content">
               <div className="inventory-label">Promedio por Venta</div>
               <div className="inventory-value">
@@ -385,7 +423,10 @@ const Dashboard = () => {
                   : '$0.00'
                 }
               </div>
-              <div className="inventory-sublabel">Ticket promedio</div>
+              <div className="inventory-sublabel">
+                <i className='bx bx-trending-up'></i>
+                Ticket promedio
+              </div>
             </div>
           </div>
         </div>
@@ -398,7 +439,7 @@ const Dashboard = () => {
 const MetricCard = ({ title, value, subtitle, icon, color, trend, trendValue }) => (
   <div className="metric-card">
     <div className="metric-icon" style={{ backgroundColor: `${color}20` }}>
-      <span style={{ filter: 'grayscale(0)' }}>{icon}</span>
+      <i className={`bx ${icon}`} style={{ color }}></i>
     </div>
     <div className="metric-content">
       <div className="metric-title">{title}</div>
@@ -407,7 +448,8 @@ const MetricCard = ({ title, value, subtitle, icon, color, trend, trendValue }) 
         {subtitle}
         {trend && trendValue !== undefined && (
           <span className={`trend-indicator ${trend}`}>
-            {trend === 'up' ? '↗' : '↘'} {Math.abs(trendValue).toFixed(1)}%
+            <i className={`bx ${trend === 'up' ? 'bx-trending-up' : 'bx-trending-down'}`}></i>
+            {Math.abs(trendValue).toFixed(1)}%
           </span>
         )}
       </div>

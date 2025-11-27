@@ -7,7 +7,6 @@ import './Products.css';
 const Products = () => {
   const { user } = useContext(AuthContext);
   
-  // Estados
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -20,7 +19,6 @@ const Products = () => {
   const [barcodeUrl, setBarcodeUrl] = useState(null);
   const [loadingCodes, setLoadingCodes] = useState(false);
   
-  // Form data
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -28,7 +26,6 @@ const Products = () => {
     stock: ''
   });
   
-  // Stock adjustment
   const [stockAdjustment, setStockAdjustment] = useState({
     adjustment: 0,
     reason: ''
@@ -55,17 +52,14 @@ const Products = () => {
   };
 
   const getAuthToken = () => {
-    // Buscar el token en múltiples lugares
     const tokenFromLocalStorage = localStorage.getItem('token');
     const tokenFromSessionStorage = sessionStorage.getItem('token');
     const accessToken = localStorage.getItem('access_token') || localStorage.getItem('accessToken');
     
-    // Si el contexto tiene el token
     if (user?.token) {
       return user.token;
     }
     
-    // Buscar en diferentes keys
     return tokenFromLocalStorage || tokenFromSessionStorage || accessToken;
   };
 
@@ -78,8 +72,6 @@ const Products = () => {
     const baseUrl = process.env.REACT_APP_API_URL;
     
     console.log('🔍 Cargando códigos para producto:', productId);
-    console.log('🔗 Base URL:', baseUrl);
-    console.log('🔑 Token disponible:', token ? '✅ Sí' : '❌ No');
     
     if (!token) {
       toast.error('No hay sesión activa. Por favor, inicia sesión nuevamente.');
@@ -87,7 +79,7 @@ const Products = () => {
       return;
     }
     
-    // Cargar QR Code con conversión a Base64
+    // Cargar QR Code
     try {
       const qrResponse = await fetch(
         `${baseUrl}/products/${productId}/qrcode/`,
@@ -99,44 +91,30 @@ const Products = () => {
         }
       );
       
-      console.log('📊 QR Response status:', qrResponse.status);
-      console.log('📊 QR Content-Type:', qrResponse.headers.get('content-type'));
-      
       if (qrResponse.ok) {
         const qrBlob = await qrResponse.blob();
-        console.log('✅ QR Blob recibido:', qrBlob.type, qrBlob.size, 'bytes');
-        
-        // Convertir blob a data URL (Base64)
         const reader = new FileReader();
         reader.onloadend = () => {
-          const base64data = reader.result;
-          console.log('✅ QR Base64 generado, longitud:', base64data.length);
-          setQrCodeUrl(base64data);
+          setQrCodeUrl(reader.result);
           toast.success('Código QR cargado');
         };
-        reader.onerror = (error) => {
-          console.error('❌ Error al convertir QR a base64:', error);
+        reader.onerror = () => {
           toast.error('Error al procesar el código QR');
         };
         reader.readAsDataURL(qrBlob);
       } else {
-        const errorText = await qrResponse.text();
-        console.error('❌ Error al cargar QR:', qrResponse.status, errorText);
-        
         if (qrResponse.status === 401) {
-          toast.error('Sesión expirada. Por favor, inicia sesión nuevamente.');
-        } else if (qrResponse.status === 404) {
-          toast.error('El código QR no existe para este producto');
+          toast.error('Sesión expirada');
         } else {
           toast.error('No se pudo cargar el código QR');
         }
       }
     } catch (error) {
-      console.error('❌ Error cargando QR:', error);
+      console.error('Error cargando QR:', error);
       toast.error('Error de conexión al cargar el código QR');
     }
     
-    // Cargar Barcode con conversión a Base64
+    // Cargar Barcode
     try {
       const barcodeResponse = await fetch(
         `${baseUrl}/products/${productId}/barcode/`,
@@ -148,40 +126,26 @@ const Products = () => {
         }
       );
       
-      console.log('📊 Barcode Response status:', barcodeResponse.status);
-      console.log('📊 Barcode Content-Type:', barcodeResponse.headers.get('content-type'));
-      
       if (barcodeResponse.ok) {
         const barcodeBlob = await barcodeResponse.blob();
-        console.log('✅ Barcode Blob recibido:', barcodeBlob.type, barcodeBlob.size, 'bytes');
-        
-        // Convertir blob a data URL (Base64)
         const reader = new FileReader();
         reader.onloadend = () => {
-          const base64data = reader.result;
-          console.log('✅ Barcode Base64 generado, longitud:', base64data.length);
-          setBarcodeUrl(base64data);
+          setBarcodeUrl(reader.result);
           toast.success('Código de barras cargado');
         };
-        reader.onerror = (error) => {
-          console.error('❌ Error al convertir barcode a base64:', error);
+        reader.onerror = () => {
           toast.error('Error al procesar el código de barras');
         };
         reader.readAsDataURL(barcodeBlob);
       } else {
-        const errorText = await barcodeResponse.text();
-        console.error('❌ Error al cargar código de barras:', barcodeResponse.status, errorText);
-        
         if (barcodeResponse.status === 401) {
-          toast.error('Sesión expirada. Por favor, inicia sesión nuevamente.');
-        } else if (barcodeResponse.status === 404) {
-          toast.error('El código de barras no existe para este producto');
+          toast.error('Sesión expirada');
         } else {
           toast.error('No se pudo cargar el código de barras');
         }
       }
     } catch (error) {
-      console.error('❌ Error cargando código de barras:', error);
+      console.error('Error cargando código de barras:', error);
       toast.error('Error de conexión al cargar el código de barras');
     }
     
@@ -247,7 +211,6 @@ const Products = () => {
     const filename = type === 'qr' ? `producto-${productId}-qr.png` : `producto-${productId}-barcode.png`;
     
     if (imageUrl && imageUrl.startsWith('data:')) {
-      // Usar data URL directamente
       const a = document.createElement('a');
       a.href = imageUrl;
       a.download = filename;
@@ -313,9 +276,9 @@ const Products = () => {
   };
 
   const getStockStatus = (stock) => {
-    if (stock === 0) return { label: 'Agotado', class: 'out' };
-    if (stock <= 10) return { label: 'Bajo', class: 'low' };
-    return { label: 'Disponible', class: 'ok' };
+    if (stock === 0) return { label: 'Agotado', class: 'out', icon: 'bx-x-circle' };
+    if (stock <= 10) return { label: 'Bajo', class: 'low', icon: 'bx-error' };
+    return { label: 'Disponible', class: 'ok', icon: 'bx-check-circle' };
   };
 
   const formatCurrency = (value) => {
@@ -338,19 +301,25 @@ const Products = () => {
     <div className="products-container">
       <Toaster position="top-right" />
 
+      {/* Header */}
       <div className="products-header">
-        <div>
-          <h1>Gestión de Productos</h1>
+        <div className="header-content">
+          <h1 className="header-title">
+            <i className='bx bxs-package'></i>
+            Gestión de Productos
+          </h1>
           <p className="subtitle">Administra tu inventario de productos</p>
         </div>
         <button onClick={openCreateModal} className="btn-primary">
-          ➕ Nuevo Producto
+          <i className='bx bx-plus'></i>
+          <span>Nuevo Producto</span>
         </button>
       </div>
 
+      {/* Filtros */}
       <div className="filters-section">
         <div className="search-box">
-          <span className="search-icon">🔍</span>
+          <i className='bx bx-search search-icon'></i>
           <input
             type="text"
             placeholder="Buscar por nombre o código..."
@@ -359,43 +328,69 @@ const Products = () => {
             className="search-input"
           />
         </div>
-        <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="filter-select">
-          <option value="all">Todas las categorías</option>
+        <select 
+          value={categoryFilter} 
+          onChange={(e) => setCategoryFilter(e.target.value)} 
+          className="filter-select"
+        >
+          <option value="all">
+            <i className='bx bx-category'></i> Todas las categorías
+          </option>
           {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
         </select>
-        <select value={stockFilter} onChange={(e) => setStockFilter(e.target.value)} className="filter-select">
+        <select 
+          value={stockFilter} 
+          onChange={(e) => setStockFilter(e.target.value)} 
+          className="filter-select"
+        >
           <option value="all">Todo el stock</option>
           <option value="low">Stock bajo</option>
           <option value="out">Agotados</option>
         </select>
-        <button onClick={loadProducts} className="btn-refresh">🔄 Actualizar</button>
+        <button onClick={loadProducts} className="products-refresh-btn">
+          <i className='bx bx-refresh'></i>
+          <span>Actualizar</span>
+        </button>
       </div>
 
+      {/* Stats Cards */}
       <div className="stats-cards">
         <div className="stat-card">
-          <span className="stat-icon">📦</span>
-          <div>
+          <div className="stat-icon-wrapper primary">
+            <i className='bx bxs-package'></i>
+          </div>
+          <div className="stat-content">
             <div className="stat-value">{products.length}</div>
             <div className="stat-label">Total Productos</div>
           </div>
         </div>
         <div className="stat-card">
-          <span className="stat-icon">⚠️</span>
-          <div>
-            <div className="stat-value">{Array.isArray(products) ? products.filter(p => p.stock <= 10).length : 0}</div>
+          <div className="stat-icon-wrapper warning">
+            <i className='bx bxs-error'></i>
+          </div>
+          <div className="stat-content">
+            <div className="stat-value">
+              {Array.isArray(products) ? products.filter(p => p.stock <= 10).length : 0}
+            </div>
             <div className="stat-label">Stock Bajo</div>
           </div>
         </div>
         <div className="stat-card">
-          <span className="stat-icon">🚫</span>
-          <div>
-            <div className="stat-value">{Array.isArray(products) ? products.filter(p => p.stock === 0).length : 0}</div>
+          <div className="stat-icon-wrapper danger">
+            <i className='bx bxs-x-circle'></i>
+          </div>
+          <div className="stat-content">
+            <div className="stat-value">
+              {Array.isArray(products) ? products.filter(p => p.stock === 0).length : 0}
+            </div>
             <div className="stat-label">Agotados</div>
           </div>
         </div>
         <div className="stat-card">
-          <span className="stat-icon">💰</span>
-          <div>
+          <div className="stat-icon-wrapper success">
+            <i className='bx bxs-wallet'></i>
+          </div>
+          <div className="stat-content">
             <div className="stat-value">
               {formatCurrency(Array.isArray(products) ? products.reduce((sum, p) => sum + ((p.price || 0) * (p.stock || 0)), 0) : 0)}
             </div>
@@ -404,66 +399,122 @@ const Products = () => {
         </div>
       </div>
 
+      {/* Tabla */}
       <div className="products-table-container">
         {filteredProducts.length === 0 ? (
           <div className="empty-state">
-            <span className="empty-icon">📭</span>
+            <i className='bx bx-package empty-icon'></i>
             <p>No se encontraron productos</p>
-            <button onClick={openCreateModal} className="btn-primary">Crear primer producto</button>
+            <small>Intenta ajustar los filtros o crea un nuevo producto</small>
+            <button onClick={openCreateModal} className="btn-primary">
+              <i className='bx bx-plus'></i>
+              Crear primer producto
+            </button>
           </div>
         ) : (
-          <table className="products-table">
-            <thead>
-              <tr>
-                <th>Código</th>
-                <th>Nombre</th>
-                <th>Categoría</th>
-                <th>Precio</th>
-                <th>Stock</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProducts.map(product => {
-                const status = getStockStatus(product.stock || 0);
-                return (
-                  <tr key={product.id}>
-                    <td className="code-cell">{product.code || 'N/A'}</td>
-                    <td className="name-cell">
-                      <div className="product-name">{product.name}</div>
-                      {product.description && <div className="product-desc">{product.description}</div>}
-                    </td>
-                    <td>{product.category || 'Sin categoría'}</td>
-                    <td className="price-cell">{formatCurrency(product.price)}</td>
-                    <td className="stock-cell">{product.stock || 0}</td>
-                    <td><span className={`status-badge ${status.class}`}>{status.label}</span></td>
-                    <td className="actions-cell">
-                      <button onClick={() => openDetailModal(product)} className="btn-icon" title="Ver detalle">👁️</button>
-                      <button onClick={() => openEditModal(product)} className="btn-icon" title="Editar">✏️</button>
-                      <button onClick={() => openAdjustStockModal(product)} className="btn-icon" title="Ajustar stock">📊</button>
-                      <button onClick={() => handleDelete(product.id)} className="btn-icon danger" title="Eliminar">🗑️</button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="table-wrapper">
+            <table className="products-table">
+              <thead>
+                <tr>
+                  <th><i className='bx bx-barcode'></i> Código</th>
+                  <th><i className='bx bx-package'></i> Nombre</th>
+                  <th><i className='bx bx-category'></i> Categoría</th>
+                  <th><i className='bx bx-dollar'></i> Precio</th>
+                  <th><i className='bx bx-box'></i> Stock</th>
+                  <th><i className='bx bx-info-circle'></i> Estado</th>
+                  <th><i className='bx bx-cog'></i> Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredProducts.map(product => {
+                  const status = getStockStatus(product.stock || 0);
+                  return (
+                    <tr key={product.id}>
+                      <td className="code-cell">
+                        <span className="code-badge">{product.code || 'N/A'}</span>
+                      </td>
+                      <td className="name-cell">
+                        <div className="product-name">{product.name}</div>
+                        {product.description && (
+                          <div className="product-desc">{product.description}</div>
+                        )}
+                      </td>
+                      <td>
+                        <span className="category-badge">
+                          <i className='bx bx-purchase-tag'></i>
+                          {product.category || 'Sin categoría'}
+                        </span>
+                      </td>
+                      <td className="price-cell">{formatCurrency(product.price)}</td>
+                      <td className="stock-cell">
+                        <span className="stock-number">{product.stock || 0}</span>
+                      </td>
+                      <td>
+                        <span className={`status-badge ${status.class}`}>
+                          <i className={`bx ${status.icon}`}></i>
+                          {status.label}
+                        </span>
+                      </td>
+                      <td className="actions-cell">
+                        <button 
+                          onClick={() => openDetailModal(product)} 
+                          className="btn-icon primary" 
+                          title="Ver detalle"
+                        >
+                          <i className='bx bx-show'></i>
+                        </button>
+                        <button 
+                          onClick={() => openEditModal(product)} 
+                          className="btn-icon warning" 
+                          title="Editar"
+                        >
+                          <i className='bx bx-edit'></i>
+                        </button>
+                        <button 
+                          onClick={() => openAdjustStockModal(product)} 
+                          className="btn-icon info" 
+                          title="Ajustar stock"
+                        >
+                          <i className='bx bx-slider-alt'></i>
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(product.id)} 
+                          className="btn-icon danger" 
+                          title="Eliminar"
+                        >
+                          <i className='bx bx-trash'></i>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
+      {/* Modal */}
       {showModal && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             {(modalType === 'create' || modalType === 'edit') && (
               <>
                 <div className="modal-header">
-                  <h2>{modalType === 'create' ? '➕ Nuevo Producto' : '✏️ Editar Producto'}</h2>
-                  <button onClick={closeModal} className="btn-close">✕</button>
+                  <h2>
+                    <i className={`bx ${modalType === 'create' ? 'bx-plus-circle' : 'bx-edit'}`}></i>
+                    {modalType === 'create' ? 'Nuevo Producto' : 'Editar Producto'}
+                  </h2>
+                  <button onClick={closeModal} className="btn-close">
+                    <i className='bx bx-x'></i>
+                  </button>
                 </div>
                 <form onSubmit={handleSubmit} className="modal-body">
                   <div className="form-group">
-                    <label>Nombre *</label>
+                    <label>
+                      <i className='bx bx-package'></i>
+                      Nombre *
+                    </label>
                     <input 
                       type="text" 
                       value={formData.name} 
@@ -474,7 +525,10 @@ const Products = () => {
                   </div>
                   
                   <div className="form-group">
-                    <label>Categoría</label>
+                    <label>
+                      <i className='bx bx-category'></i>
+                      Categoría
+                    </label>
                     <input 
                       type="text" 
                       value={formData.category} 
@@ -488,7 +542,10 @@ const Products = () => {
                   </div>
 
                   <div className="form-group">
-                    <label>Precio *</label>
+                    <label>
+                      <i className='bx bx-dollar-circle'></i>
+                      Precio *
+                    </label>
                     <input 
                       type="number" 
                       step="0.01" 
@@ -500,10 +557,12 @@ const Products = () => {
                     />
                   </div>
 
-                  {/* ✅ Solo mostrar campo de stock al CREAR producto */}
                   {modalType === 'create' && (
                     <div className="form-group">
-                      <label>Stock Inicial *</label>
+                      <label>
+                        <i className='bx bx-box'></i>
+                        Stock Inicial *
+                      </label>
                       <input 
                         type="number" 
                         min="0" 
@@ -513,84 +572,147 @@ const Products = () => {
                         placeholder="0" 
                       />
                       <small className="form-hint">
+                        <i className='bx bx-info-circle'></i>
                         El stock inicial del producto. Puedes ajustarlo después desde "Ajustar Stock"
                       </small>
                     </div>
                   )}
 
-                  {/* ✅ Información del stock actual al EDITAR (solo lectura) */}
                   {modalType === 'edit' && selectedProduct && (
                     <div className="form-info-box">
                       <div className="info-row">
-                        <span className="info-label">📦 Stock Actual:</span>
+                        <span className="info-label">
+                          <i className='bx bxs-box'></i>
+                          Stock Actual:
+                        </span>
                         <span className="info-value">{selectedProduct.stock || 0} unidades</span>
                       </div>
                       <small className="form-hint">
-                        Para modificar el stock, usa el botón "Ajustar Stock" 📊
+                        <i className='bx bx-info-circle'></i>
+                        Para modificar el stock, usa el botón "Ajustar Stock"
                       </small>
                     </div>
                   )}
 
                   <div className="modal-footer">
                     <button type="button" onClick={closeModal} className="btn-secondary">
+                      <i className='bx bx-x'></i>
                       Cancelar
                     </button>
                     <button type="submit" className="btn-primary">
+                      <i className={`bx ${modalType === 'create' ? 'bx-plus' : 'bx-save'}`}></i>
                       {modalType === 'create' ? 'Crear Producto' : 'Guardar Cambios'}
                     </button>
                   </div>
                 </form>
               </>
             )}
+
             {modalType === 'detail' && selectedProduct && (
               <>
                 <div className="modal-header">
-                  <h2>📦 Detalle del Producto</h2>
-                  <button onClick={closeModal} className="btn-close">✕</button>
+                  <h2>
+                    <i className='bx bxs-info-circle'></i>
+                    Detalle del Producto
+                  </h2>
+                  <button onClick={closeModal} className="btn-close">
+                    <i className='bx bx-x'></i>
+                  </button>
                 </div>
                 <div className="modal-body product-detail">
-                  <div className="detail-row"><strong>Código:</strong><span>{selectedProduct.code || 'N/A'}</span></div>
-                  <div className="detail-row"><strong>Nombre:</strong><span>{selectedProduct.name}</span></div>
-                  <div className="detail-row"><strong>Descripción:</strong><span>{selectedProduct.description || 'Sin descripción'}</span></div>
-                  <div className="detail-row"><strong>Categoría:</strong><span>{selectedProduct.category || 'Sin categoría'}</span></div>
-                  <div className="detail-row"><strong>Precio:</strong><span className="price-highlight">{formatCurrency(selectedProduct.price)}</span></div>
-                  <div className="detail-row"><strong>Stock Actual:</strong><span className="stock-highlight">{selectedProduct.stock || 0} unidades</span></div>
-                  <div className="detail-row"><strong>Stock Mínimo:</strong><span>{selectedProduct.min_stock || 10} unidades</span></div>
-                  <div className="detail-row"><strong>Valor en Inventario:</strong><span>{formatCurrency((selectedProduct.price || 0) * (selectedProduct.stock || 0))}</span></div>
+                  <div className="detail-row">
+                    <strong><i className='bx bx-barcode'></i> Código:</strong>
+                    <span className="code-badge">{selectedProduct.code || 'N/A'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <strong><i className='bx bx-package'></i> Nombre:</strong>
+                    <span>{selectedProduct.name}</span>
+                  </div>
+                  <div className="detail-row">
+                    <strong><i className='bx bx-detail'></i> Descripción:</strong>
+                    <span>{selectedProduct.description || 'Sin descripción'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <strong><i className='bx bx-category'></i> Categoría:</strong>
+                    <span>{selectedProduct.category || 'Sin categoría'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <strong><i className='bx bx-dollar-circle'></i> Precio:</strong>
+                    <span className="price-highlight">{formatCurrency(selectedProduct.price)}</span>
+                  </div>
+                  <div className="detail-row">
+                    <strong><i className='bx bx-box'></i> Stock Actual:</strong>
+                    <span className="stock-highlight">{selectedProduct.stock || 0} unidades</span>
+                  </div>
+                  <div className="detail-row">
+                    <strong><i className='bx bx-error'></i> Stock Mínimo:</strong>
+                    <span>{selectedProduct.min_stock || 10} unidades</span>
+                  </div>
+                  <div className="detail-row">
+                    <strong><i className='bx bx-wallet'></i> Valor en Inventario:</strong>
+                    <span>{formatCurrency((selectedProduct.price || 0) * (selectedProduct.stock || 0))}</span>
+                  </div>
 
                   <div className="codes-section">
-                    <h3 style={{ marginTop: '20px', marginBottom: '15px', fontSize: '16px' }}>📱 Códigos del Producto</h3>
+                    <h3>
+                      <i className='bx bx-qr'></i>
+                      Códigos del Producto
+                    </h3>
                     {loadingCodes ? (
-                      <div style={{ textAlign: 'center', padding: '20px' }}>
+                      <div className="loading-codes">
                         <div className="spinner"></div>
                         <p>Cargando códigos...</p>
                       </div>
                     ) : (
                       <div className="codes-container">
                         <div className="code-box">
-                          <strong>Código QR:</strong>
+                          <strong>
+                            <i className='bx bx-qr-scan'></i>
+                            Código QR
+                          </strong>
                           <div className="code-image-wrapper">
                             {qrCodeUrl ? (
                               <img src={qrCodeUrl} alt="Código QR" className="code-image" />
                             ) : (
-                              <div className="code-error">⚠️ No disponible</div>
+                              <div className="code-error">
+                                <i className='bx bx-error-circle'></i>
+                                No disponible
+                              </div>
                             )}
                           </div>
-                          <button type="button" onClick={() => downloadCode(selectedProduct.id, 'qr')} className="btn-download" disabled={!qrCodeUrl}>
-                            ⬇️ Descargar QR
+                          <button 
+                            type="button" 
+                            onClick={() => downloadCode(selectedProduct.id, 'qr')} 
+                            className="btn-download" 
+                            disabled={!qrCodeUrl}
+                          >
+                            <i className='bx bx-download'></i>
+                            Descargar QR
                           </button>
                         </div>
                         <div className="code-box">
-                          <strong>Código de Barras:</strong>
+                          <strong>
+                            <i className='bx bx-barcode'></i>
+                            Código de Barras
+                          </strong>
                           <div className="code-image-wrapper">
                             {barcodeUrl ? (
                               <img src={barcodeUrl} alt="Código de Barras" className="code-image" />
                             ) : (
-                              <div className="code-error">⚠️ No disponible</div>
+                              <div className="code-error">
+                                <i className='bx bx-error-circle'></i>
+                                No disponible
+                              </div>
                             )}
                           </div>
-                          <button type="button" onClick={() => downloadCode(selectedProduct.id, 'barcode')} className="btn-download" disabled={!barcodeUrl}>
-                            ⬇️ Descargar Código
+                          <button 
+                            type="button" 
+                            onClick={() => downloadCode(selectedProduct.id, 'barcode')} 
+                            className="btn-download" 
+                            disabled={!barcodeUrl}
+                          >
+                            <i className='bx bx-download'></i>
+                            Descargar Código
                           </button>
                         </div>
                       </div>
@@ -598,8 +720,14 @@ const Products = () => {
                   </div>
                 </div>
                 <div className="modal-footer">
-                  <button onClick={() => openEditModal(selectedProduct)} className="btn-primary">Editar</button>
-                  <button onClick={closeModal} className="btn-secondary">Cerrar</button>
+                  <button onClick={() => openEditModal(selectedProduct)} className="btn-primary">
+                    <i className='bx bx-edit'></i>
+                    Editar
+                  </button>
+                  <button onClick={closeModal} className="btn-secondary">
+                    <i className='bx bx-x'></i>
+                    Cerrar
+                  </button>
                 </div>
               </>
             )}
@@ -607,26 +735,70 @@ const Products = () => {
             {modalType === 'adjust-stock' && selectedProduct && (
               <>
                 <div className="modal-header">
-                  <h2>📊 Ajustar Stock</h2>
-                  <button onClick={closeModal} className="btn-close">✕</button>
+                  <h2>
+                    <i className='bx bx-slider-alt'></i>
+                    Ajustar Stock
+                  </h2>
+                  <button onClick={closeModal} className="btn-close">
+                    <i className='bx bx-x'></i>
+                  </button>
                 </div>
                 <form onSubmit={handleAdjustStock} className="modal-body">
                   <div className="stock-current">
-                    <strong>Producto:</strong> {selectedProduct.name}<br />
-                    <strong>Stock Actual:</strong> {selectedProduct.stock || 0} unidades
+                    <div className="stock-current-header">
+                      <i className='bx bxs-package'></i>
+                      <strong>Producto:</strong> {selectedProduct.name}
+                    </div>
+                    <div className="stock-current-value">
+                      <i className='bx bxs-box'></i>
+                      <strong>Stock Actual:</strong> {selectedProduct.stock || 0} unidades
+                    </div>
                   </div>
                   <div className="form-group">
-                    <label>Ajuste de Stock *</label>
-                    <input type="number" value={stockAdjustment.adjustment} onChange={(e) => setStockAdjustment({ ...stockAdjustment, adjustment: parseInt(e.target.value) || 0 })} placeholder="Positivo para sumar, negativo para restar" required />
-                    <small>Nuevo stock: {(selectedProduct.stock || 0) + stockAdjustment.adjustment}</small>
+                    <label>
+                      <i className='bx bx-plus-minus'></i>
+                      Ajuste de Stock *
+                    </label>
+                    <input 
+                      type="number" 
+                      value={stockAdjustment.adjustment} 
+                      onChange={(e) => setStockAdjustment({ 
+                        ...stockAdjustment, 
+                        adjustment: parseInt(e.target.value) || 0 
+                      })} 
+                      placeholder="Positivo para sumar, negativo para restar" 
+                      required 
+                    />
+                    <small className="stock-preview">
+                      <i className='bx bx-info-circle'></i>
+                      Nuevo stock: <strong>{(selectedProduct.stock || 0) + stockAdjustment.adjustment}</strong>
+                    </small>
                   </div>
                   <div className="form-group">
-                    <label>Motivo del Ajuste *</label>
-                    <textarea value={stockAdjustment.reason} onChange={(e) => setStockAdjustment({ ...stockAdjustment, reason: e.target.value })} placeholder="Ej: Devolución de proveedor, inventario físico, corrección de error..." rows="3" required />
+                    <label>
+                      <i className='bx bx-note'></i>
+                      Motivo del Ajuste *
+                    </label>
+                    <textarea 
+                      value={stockAdjustment.reason} 
+                      onChange={(e) => setStockAdjustment({ 
+                        ...stockAdjustment, 
+                        reason: e.target.value 
+                      })} 
+                      placeholder="Ej: Devolución de proveedor, inventario físico, corrección de error..." 
+                      rows="3" 
+                      required 
+                    />
                   </div>
                   <div className="modal-footer">
-                    <button type="button" onClick={closeModal} className="btn-secondary">Cancelar</button>
-                    <button type="submit" className="btn-primary">Confirmar Ajuste</button>
+                    <button type="button" onClick={closeModal} className="btn-secondary">
+                      <i className='bx bx-x'></i>
+                      Cancelar
+                    </button>
+                    <button type="submit" className="btn-primary">
+                      <i className='bx bx-check'></i>
+                      Confirmar Ajuste
+                    </button>
                   </div>
                 </form>
               </>

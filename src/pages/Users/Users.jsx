@@ -5,12 +5,10 @@ import toast, { Toaster } from 'react-hot-toast';
 import './Users.css';
 
 const Users = () => {
-  // Estados principales
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [activeView, setActiveView] = useState('list'); // list, create, detail
+  const [activeView, setActiveView] = useState('list');
   
-  // Estados para crear/editar empleado
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -19,20 +17,16 @@ const Users = () => {
     last_name: ''
   });
   
-  // Estado para empleado seleccionado
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [employeeSales, setEmployeeSales] = useState([]);
   const [employeeStats, setEmployeeStats] = useState(null);
   
-  // Estado para modal de confirmación
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [employeeToDelete, setEmployeeToDelete] = useState(null);
 
   useEffect(() => {
     loadEmployees();
   }, []);
-
-  // ========== CARGAR DATOS ==========
 
   const loadEmployees = async () => {
     setLoading(true);
@@ -52,15 +46,12 @@ const Users = () => {
   const loadEmployeeDetails = async (employeeId) => {
     setLoading(true);
     try {
-      // Cargar datos del empleado
       const employee = await userService.getById(employeeId);
       setSelectedEmployee(employee);
 
-      // Cargar estadísticas del empleado
       const stats = await userService.getActivity(employeeId);
       setEmployeeStats(stats);
 
-      // Cargar ventas del empleado
       const sales = await saleService.getByUser(employeeId);
       setEmployeeSales(Array.isArray(sales) ? sales : (sales.results || []));
 
@@ -73,12 +64,9 @@ const Users = () => {
     }
   };
 
-  // ========== ACCIONES CRUD ==========
-
   const handleCreateEmployee = async (e) => {
     e.preventDefault();
     
-    // Validaciones
     if (!formData.username || !formData.email || !formData.password) {
       toast.error('Por favor completa todos los campos obligatorios');
       return;
@@ -93,15 +81,13 @@ const Users = () => {
     const loadingToast = toast.loading('Creando empleado...');
 
     try {
-      // El backend asignará automáticamente el rol de empleado y el manager actual
       await userService.create({
         ...formData,
-        role: 2 // 2 = empleado
+        role: 2
       });
 
       toast.success('✅ Empleado creado exitosamente', { id: loadingToast });
       
-      // Limpiar formulario
       setFormData({
         username: '',
         email: '',
@@ -110,7 +96,6 @@ const Users = () => {
         last_name: ''
       });
       
-      // Recargar lista y volver a la vista principal
       await loadEmployees();
       setActiveView('list');
       
@@ -135,10 +120,8 @@ const Users = () => {
       setShowDeleteModal(false);
       setEmployeeToDelete(null);
       
-      // Recargar lista
       await loadEmployees();
       
-      // Si estábamos viendo los detalles del empleado eliminado, volver a la lista
       if (selectedEmployee?.id === employeeToDelete.id) {
         setActiveView('list');
         setSelectedEmployee(null);
@@ -176,12 +159,10 @@ const Users = () => {
     }
   };
 
-  // ========== UTILIDADES ==========
-
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
-      currency: 'MXN'
+      currency: 'MXN',
     }).format(amount || 0);
   };
 
@@ -189,7 +170,7 @@ const Users = () => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('es-MX', {
       year: 'numeric',
-      month: 'long',
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -201,17 +182,18 @@ const Users = () => {
     setShowDeleteModal(true);
   };
 
-  // ========== RENDER ==========
-
   return (
     <div className="users-container">
       <Toaster position="top-right" />
 
       {/* Header */}
       <div className="users-header">
-        <div>
-          <h1>👥 Gestión de Empleados</h1>
-          <p>Administra tu equipo de trabajo</p>
+        <div className="header-content">
+          <h1 className="header-title">
+            <i className='bx bxs-group'></i>
+            Gestión de Empleados
+          </h1>
+          <p className="subtitle">Administra tu equipo de trabajo</p>
         </div>
         
         {activeView === 'list' && (
@@ -220,7 +202,8 @@ const Users = () => {
             className="btn-primary"
             disabled={loading}
           >
-            ➕ Agregar Empleado
+            <i className='bx bx-user-plus'></i>
+            <span>Agregar Empleado</span>
           </button>
         )}
         
@@ -239,12 +222,13 @@ const Users = () => {
             }}
             className="btn-secondary"
           >
-            ← Volver a la lista
+            <i className='bx bx-arrow-back'></i>
+            <span>Volver a la lista</span>
           </button>
         )}
       </div>
 
-      {/* ========== VISTA: LISTA DE EMPLEADOS ========== */}
+      {/* VISTA: LISTA DE EMPLEADOS */}
       {activeView === 'list' && (
         <div className="employees-list">
           {loading ? (
@@ -254,14 +238,15 @@ const Users = () => {
             </div>
           ) : employees.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">👥</div>
+              <i className='bx bxs-user-x empty-icon'></i>
               <h3>No tienes empleados registrados</h3>
               <p>Comienza agregando tu primer empleado para gestionar tu equipo</p>
               <button 
                 onClick={() => setActiveView('create')}
                 className="btn-primary"
               >
-                ➕ Agregar Primer Empleado
+                <i className='bx bx-user-plus'></i>
+                Agregar Primer Empleado
               </button>
             </div>
           ) : (
@@ -269,36 +254,46 @@ const Users = () => {
               {employees.map((employee) => (
                 <div key={employee.id} className="employee-card">
                   <div className="employee-avatar">
-                    {employee.first_name?.[0] || employee.username?.[0] || '?'}
+                    <span className="avatar-letter">
+                      {employee.first_name?.[0] || employee.username?.[0] || '?'}
+                    </span>
                   </div>
                   
                   <div className="employee-info">
                     <h3>{employee.first_name} {employee.last_name}</h3>
-                    <p className="employee-username">@{employee.username}</p>
-                    <p className="employee-email">{employee.email}</p>
+                    <p className="employee-username">
+                      <i className='bx bx-at'></i>
+                      {employee.username}
+                    </p>
+                    <p className="employee-email">
+                      <i className='bx bx-envelope'></i>
+                      {employee.email}
+                    </p>
                   </div>
 
                   <div className="employee-actions">
                     <button 
                       onClick={() => loadEmployeeDetails(employee.id)}
-                      className="btn-view"
+                      className="btn-icon primary"
                       title="Ver detalles"
                     >
-                      👁️ Ver Detalles
+                      <i className='bx bx-show'></i>
+                      <span>Ver Detalles</span>
                     </button>
                     <button 
                       onClick={() => handleResetPassword(employee.id)}
-                      className="btn-reset"
+                      className="btn-icon warning"
                       title="Cambiar contraseña"
                     >
-                      🔑 Contraseña
+                      <i className='bx bx-key'></i>
+                      <span>Contraseña</span>
                     </button>
                     <button 
                       onClick={() => openDeleteModal(employee)}
-                      className="btn-delete"
+                      className="btn-icon danger"
                       title="Eliminar empleado"
                     >
-                      🗑️
+                      <i className='bx bx-trash'></i>
                     </button>
                   </div>
                 </div>
@@ -308,11 +303,14 @@ const Users = () => {
         </div>
       )}
 
-      {/* ========== VISTA: CREAR EMPLEADO ========== */}
+      {/* VISTA: CREAR EMPLEADO */}
       {activeView === 'create' && (
         <div className="create-employee">
           <div className="form-container">
-            <h2>➕ Agregar Nuevo Empleado</h2>
+            <h2>
+              <i className='bx bxs-user-plus'></i>
+              Agregar Nuevo Empleado
+            </h2>
             <p className="form-description">
               Complete los datos del nuevo empleado. Se le asignará automáticamente el rol de empleado.
             </p>
@@ -320,7 +318,10 @@ const Users = () => {
             <form onSubmit={handleCreateEmployee}>
               <div className="form-row">
                 <div className="form-group">
-                  <label>Nombre de usuario *</label>
+                  <label>
+                    <i className='bx bx-user'></i>
+                    Nombre de usuario *
+                  </label>
                   <input
                     type="text"
                     value={formData.username}
@@ -331,7 +332,10 @@ const Users = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Email *</label>
+                  <label>
+                    <i className='bx bx-envelope'></i>
+                    Email *
+                  </label>
                   <input
                     type="email"
                     value={formData.email}
@@ -344,7 +348,10 @@ const Users = () => {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Nombre</label>
+                  <label>
+                    <i className='bx bx-id-card'></i>
+                    Nombre
+                  </label>
                   <input
                     type="text"
                     value={formData.first_name}
@@ -354,7 +361,10 @@ const Users = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Apellido</label>
+                  <label>
+                    <i className='bx bx-id-card'></i>
+                    Apellido
+                  </label>
                   <input
                     type="text"
                     value={formData.last_name}
@@ -365,7 +375,10 @@ const Users = () => {
               </div>
 
               <div className="form-group">
-                <label>Contraseña *</label>
+                <label>
+                  <i className='bx bx-lock-alt'></i>
+                  Contraseña *
+                </label>
                 <input
                   type="password"
                   value={formData.password}
@@ -374,7 +387,10 @@ const Users = () => {
                   required
                   minLength={6}
                 />
-                <small>La contraseña debe tener al menos 6 caracteres</small>
+                <small>
+                  <i className='bx bx-info-circle'></i>
+                  La contraseña debe tener al menos 6 caracteres
+                </small>
               </div>
 
               <div className="form-actions">
@@ -384,6 +400,7 @@ const Users = () => {
                   className="btn-secondary"
                   disabled={loading}
                 >
+                  <i className='bx bx-x'></i>
                   Cancelar
                 </button>
                 <button 
@@ -391,7 +408,8 @@ const Users = () => {
                   className="btn-primary"
                   disabled={loading}
                 >
-                  {loading ? 'Creando...' : '✓ Crear Empleado'}
+                  <i className='bx bx-check'></i>
+                  {loading ? 'Creando...' : 'Crear Empleado'}
                 </button>
               </div>
             </form>
@@ -399,28 +417,42 @@ const Users = () => {
         </div>
       )}
 
-      {/* ========== VISTA: DETALLES DEL EMPLEADO ========== */}
+      {/* VISTA: DETALLES DEL EMPLEADO */}
       {activeView === 'detail' && selectedEmployee && (
         <div className="employee-detail">
           {/* Información del empleado */}
           <div className="detail-header">
             <div className="detail-avatar">
-              {selectedEmployee.first_name?.[0] || selectedEmployee.username?.[0] || '?'}
+              <i className='bx bxs-user-circle avatar-bg-icon'></i>
+              <span className="avatar-letter">
+                {selectedEmployee.first_name?.[0] || selectedEmployee.username?.[0] || '?'}
+              </span>
             </div>
             <div className="detail-info">
               <h2>{selectedEmployee.first_name} {selectedEmployee.last_name}</h2>
-              <p className="detail-username">@{selectedEmployee.username}</p>
-              <p className="detail-email">{selectedEmployee.email}</p>
+              <p className="detail-username">
+                <i className='bx bx-at'></i>
+                {selectedEmployee.username}
+              </p>
+              <p className="detail-email">
+                <i className='bx bx-envelope'></i>
+                {selectedEmployee.email}
+              </p>
             </div>
           </div>
 
           {/* Estadísticas del empleado */}
           {employeeStats && (
             <div className="employee-stats">
-              <h3>📊 Estadísticas</h3>
+              <h3>
+                <i className='bx bxs-bar-chart-alt-2'></i>
+                Estadísticas
+              </h3>
               <div className="stats-grid">
                 <div className="stat-card">
-                  <div className="stat-icon">💰</div>
+                  <div className="stat-icon-wrapper success">
+                    <i className='bx bxs-dollar-circle'></i>
+                  </div>
                   <div className="stat-content">
                     <p className="stat-label">Total Vendido</p>
                     <p className="stat-value">{formatCurrency(employeeStats.total_sales_amount)}</p>
@@ -428,7 +460,9 @@ const Users = () => {
                 </div>
 
                 <div className="stat-card">
-                  <div className="stat-icon">🛒</div>
+                  <div className="stat-icon-wrapper primary">
+                    <i className='bx bxs-shopping-bags'></i>
+                  </div>
                   <div className="stat-content">
                     <p className="stat-label">Ventas Realizadas</p>
                     <p className="stat-value">{employeeStats.sales_count}</p>
@@ -436,7 +470,9 @@ const Users = () => {
                 </div>
 
                 <div className="stat-card">
-                  <div className="stat-icon">📈</div>
+                  <div className="stat-icon-wrapper info">
+                    <i className='bx bxs-trending-up'></i>
+                  </div>
                   <div className="stat-content">
                     <p className="stat-label">Promedio por Venta</p>
                     <p className="stat-value">
@@ -452,7 +488,10 @@ const Users = () => {
 
           {/* Ventas del empleado */}
           <div className="employee-sales">
-            <h3>🛒 Ventas Recientes</h3>
+            <h3>
+              <i className='bx bxs-cart'></i>
+              Ventas Recientes
+            </h3>
             
             {loading ? (
               <div className="loading-state">
@@ -461,40 +500,51 @@ const Users = () => {
               </div>
             ) : employeeSales.length === 0 ? (
               <div className="empty-state-small">
+                <i className='bx bx-cart-download'></i>
                 <p>Este empleado aún no ha realizado ventas</p>
               </div>
             ) : (
-              <div className="sales-table">
-                <table>
+              <div className="table-wrapper">
+                <table className="users-sales-table">
                   <thead>
                     <tr>
-                      <th>ID</th>
-                      <th>Fecha</th>
-                      <th>Total</th>
-                      <th>Método de Pago</th>
-                      <th>Estado</th>
+                      <th><i className='bx bx-hash'></i> ID</th>
+                      <th><i className='bx bx-calendar'></i> Fecha</th>
+                      <th><i className='bx bx-dollar'></i> Total</th>
+                      <th><i className='bx bx-credit-card'></i> Método de Pago</th>
+                      <th><i className='bx bx-info-circle'></i> Estado</th>
                     </tr>
                   </thead>
                   <tbody>
                     {employeeSales.map((sale) => (
                       <tr key={sale.id}>
-                        <td>#{sale.id}</td>
-                        <td>{formatDate(sale.date)}</td>
+                        <td>
+                          <span className="id-badge">#{sale.id}</span>
+                        </td>
+                        <td className="date-cell">
+                          <i className='bx bx-time-five'></i>
+                          {formatDate(sale.date)}
+                        </td>
                         <td className="amount">{formatCurrency(sale.total_price)}</td>
                         <td>
-                          <span className={`payment-method ${sale.payment_method}`}>
-                            {sale.payment_method === 'efectivo' && '💵'}
-                            {sale.payment_method === 'tarjeta' && '💳'}
-                            {sale.payment_method === 'transferencia' && '🏦'}
-                            {' '}
-                            {sale.payment_method || 'N/A'}
+                          <span className={`payment-method ${sale.payment_method || 'efectivo'}`}>
+                            {(sale.payment_method === 'efectivo' || !sale.payment_method) && <i className='bx bx-money'></i>}
+                            {sale.payment_method === 'tarjeta' && <i className='bx bx-credit-card'></i>}
+                            {sale.payment_method === 'transferencia' && <i className='bx bx-transfer'></i>}
+                            {sale.payment_method || 'Efectivo'}
                           </span>
                         </td>
                         <td>
                           {sale.is_cancelled ? (
-                            <span className="status-badge cancelled">❌ Cancelada</span>
+                            <span className="status-badge cancelled">
+                              <i className='bx bx-x-circle'></i>
+                              Cancelada
+                            </span>
                           ) : (
-                            <span className="status-badge active">✅ Completada</span>
+                            <span className="status-badge active">
+                              <i className='bx bx-check-circle'></i>
+                              Completada
+                            </span>
                           )}
                         </td>
                       </tr>
@@ -507,21 +557,34 @@ const Users = () => {
         </div>
       )}
 
-      {/* ========== MODAL: CONFIRMAR ELIMINACIÓN ========== */}
+      {/* MODAL: CONFIRMAR ELIMINACIÓN */}
       {showDeleteModal && employeeToDelete && (
         <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>⚠️ Confirmar Eliminación</h3>
+              <h3>
+                <i className='bx bxs-error-circle'></i>
+                Confirmar Eliminación
+              </h3>
+              <button onClick={() => setShowDeleteModal(false)} className="btn-close">
+                <i className='bx bx-x'></i>
+              </button>
             </div>
             
             <div className="modal-body">
               <p>¿Estás seguro de que deseas eliminar al empleado?</p>
               <div className="employee-to-delete">
-                <strong>{employeeToDelete.first_name} {employeeToDelete.last_name}</strong>
-                <small>@{employeeToDelete.username}</small>
+                <i className='bx bxs-user-circle employee-icon'></i>
+                <div>
+                  <strong>{employeeToDelete.first_name} {employeeToDelete.last_name}</strong>
+                  <small>
+                    <i className='bx bx-at'></i>
+                    {employeeToDelete.username}
+                  </small>
+                </div>
               </div>
               <p className="warning-text">
+                <i className='bx bx-error-alt'></i>
                 Esta acción no se puede deshacer. El empleado ya no podrá acceder al sistema.
               </p>
             </div>
@@ -532,6 +595,7 @@ const Users = () => {
                 className="btn-secondary"
                 disabled={loading}
               >
+                <i className='bx bx-x'></i>
                 Cancelar
               </button>
               <button 
@@ -539,7 +603,8 @@ const Users = () => {
                 className="btn-danger"
                 disabled={loading}
               >
-                {loading ? 'Eliminando...' : '🗑️ Eliminar'}
+                <i className='bx bx-trash'></i>
+                {loading ? 'Eliminando...' : 'Eliminar'}
               </button>
             </div>
           </div>

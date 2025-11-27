@@ -5,22 +5,19 @@ import toast, { Toaster } from 'react-hot-toast';
 import './Inventory.css';
 
 const Inventory = () => {
-  // Estados principales
-  const [activeTab, setActiveTab] = useState('movements'); // movements, low-stock, statistics
+  const [activeTab, setActiveTab] = useState('movements');
   const [movements, setMovements] = useState([]);
   const [lowStockProducts, setLowStockProducts] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Estados para filtros
   const [filters, setFilters] = useState({
     product: '',
-    type: '', // entrada, salida
+    type: '',
     startDate: '',
     endDate: ''
   });
 
-  // Estados para crear movimiento
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [formData, setFormData] = useState({
     product: '',
@@ -29,7 +26,6 @@ const Inventory = () => {
     note: ''
   });
 
-  // Estados para estadísticas
   const [stats, setStats] = useState({
     totalMovements: 0,
     totalEntradas: 0,
@@ -37,7 +33,6 @@ const Inventory = () => {
     netChange: 0
   });
 
-  // Usuario actual
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
@@ -48,8 +43,6 @@ const Inventory = () => {
     loadLowStockProducts();
     loadProducts();
   }, []);
-
-  // ========== CARGAR DATOS ==========
 
   const loadMovements = async () => {
     setLoading(true);
@@ -103,8 +96,6 @@ const Inventory = () => {
       netChange: totalEntradasQty - totalSalidasQty
     });
   };
-
-  // ========== ACCIONES ==========
 
   const handleCreateMovement = async (e) => {
     e.preventDefault();
@@ -165,8 +156,6 @@ const Inventory = () => {
     setTimeout(() => loadMovements(), 100);
   };
 
-  // ========== UTILIDADES ==========
-
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('es-MX', {
@@ -183,23 +172,13 @@ const Inventory = () => {
     return product ? product.name : `Producto #${productId}`;
   };
 
-  const getMovementIcon = (type) => {
-    return type === 'entrada' ? '📥' : '📤';
-  };
-
-  const getMovementColor = (type) => {
-    return type === 'entrada' ? '#10b981' : '#ef4444';
-  };
-
   const getStockStatusColor = (stock) => {
-    if (stock <= 5) return '#ef4444'; // Crítico
-    if (stock <= 10) return '#f59e0b'; // Bajo
-    return '#10b981'; // Normal
+    if (stock <= 5) return '#ef4444';
+    if (stock <= 10) return '#f59e0b';
+    return '#10b981';
   };
 
   const isAdmin = currentUser?.role?.name === 'Admin' || currentUser?.role?.name === 'admin';
-
-  // ========== RENDER ==========
 
   return (
     <div className="inventory-container">
@@ -207,9 +186,12 @@ const Inventory = () => {
 
       {/* Header */}
       <div className="inventory-header">
-        <div>
-          <h1>📦 Gestión de Inventario</h1>
-          <p>Administra el stock y movimientos de productos</p>
+        <div className="header-content">
+          <h1 className="header-title">
+            <i className='bx bxs-box'></i>
+            Gestión de Inventario
+          </h1>
+          <p className="subtitle">Administra el stock y movimientos de productos</p>
         </div>
         
         {isAdmin && (
@@ -217,7 +199,8 @@ const Inventory = () => {
             onClick={() => setShowCreateModal(true)}
             className="btn-primary"
           >
-            ➕ Nuevo Movimiento
+            <i className='bx bx-plus'></i>
+            <span>Nuevo Movimiento</span>
           </button>
         )}
       </div>
@@ -225,34 +208,46 @@ const Inventory = () => {
       {/* Tabs */}
       <div className="inventory-tabs">
         <button
-          className={activeTab === 'movements' ? 'active' : ''}
+          className={`tab-btn ${activeTab === 'movements' ? 'active' : ''}`}
           onClick={() => setActiveTab('movements')}
         >
-          📋 Movimientos
+          <i className='bx bx-list-ul'></i>
+          Movimientos
         </button>
         <button
-          className={activeTab === 'low-stock' ? 'active' : ''}
+          className={`tab-btn ${activeTab === 'low-stock' ? 'active' : ''}`}
           onClick={() => setActiveTab('low-stock')}
         >
-          ⚠️ Stock Bajo ({lowStockProducts.length})
+          <i className='bx bx-error'></i>
+          Stock Bajo
+          {lowStockProducts.length > 0 && (
+            <span className="tab-badge">{lowStockProducts.length}</span>
+          )}
         </button>
         <button
-          className={activeTab === 'statistics' ? 'active' : ''}
+          className={`tab-btn ${activeTab === 'statistics' ? 'active' : ''}`}
           onClick={() => setActiveTab('statistics')}
         >
-          📊 Estadísticas
+          <i className='bx bx-bar-chart-alt-2'></i>
+          Estadísticas
         </button>
       </div>
 
-      {/* ========== TAB: MOVIMIENTOS ========== */}
+      {/* TAB: MOVIMIENTOS */}
       {activeTab === 'movements' && (
         <div className="movements-content">
           {/* Filtros */}
           <div className="filters-card">
-            <h3>🔍 Filtros</h3>
+            <h3>
+              <i className='bx bx-filter-alt'></i>
+              Filtros
+            </h3>
             <div className="filters-grid">
               <div className="filter-group">
-                <label>Producto</label>
+                <label>
+                  <i className='bx bx-package'></i>
+                  Producto
+                </label>
                 <select
                   value={filters.product}
                   onChange={(e) => setFilters({...filters, product: e.target.value})}
@@ -267,19 +262,25 @@ const Inventory = () => {
               </div>
 
               <div className="filter-group">
-                <label>Tipo de Movimiento</label>
+                <label>
+                  <i className='bx bx-transfer'></i>
+                  Tipo de Movimiento
+                </label>
                 <select
                   value={filters.type}
                   onChange={(e) => setFilters({...filters, type: e.target.value})}
                 >
                   <option value="">Todos</option>
-                  <option value="entrada">📥 Entradas</option>
-                  <option value="salida">📤 Salidas</option>
+                  <option value="entrada">Entradas</option>
+                  <option value="salida">Salidas</option>
                 </select>
               </div>
 
               <div className="filter-group">
-                <label>Fecha Inicio</label>
+                <label>
+                  <i className='bx bx-calendar'></i>
+                  Fecha Inicio
+                </label>
                 <input
                   type="date"
                   value={filters.startDate}
@@ -288,7 +289,10 @@ const Inventory = () => {
               </div>
 
               <div className="filter-group">
-                <label>Fecha Fin</label>
+                <label>
+                  <i className='bx bx-calendar'></i>
+                  Fecha Fin
+                </label>
                 <input
                   type="date"
                   value={filters.endDate}
@@ -299,9 +303,11 @@ const Inventory = () => {
 
             <div className="filters-actions">
               <button onClick={handleApplyFilters} className="btn-apply">
+                <i className='bx bx-check'></i>
                 Aplicar Filtros
               </button>
               <button onClick={handleClearFilters} className="btn-clear">
+                <i className='bx bx-x'></i>
                 Limpiar
               </button>
             </div>
@@ -316,20 +322,20 @@ const Inventory = () => {
               </div>
             ) : movements.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-icon">📭</div>
+                <i className='bx bx-box empty-icon'></i>
                 <h3>No hay movimientos registrados</h3>
                 <p>Los movimientos de inventario aparecerán aquí</p>
               </div>
             ) : (
-              <div className="movements-table">
-                <table>
+              <div className="table-wrapper">
+                <table className="movements-table">
                   <thead>
                     <tr>
-                      <th>Tipo</th>
-                      <th>Producto</th>
-                      <th>Cantidad</th>
-                      <th>Fecha</th>
-                      <th>Nota</th>
+                      <th><i className='bx bx-transfer'></i> Tipo</th>
+                      <th><i className='bx bx-package'></i> Producto</th>
+                      <th><i className='bx bx-hash'></i> Cantidad</th>
+                      <th><i className='bx bx-calendar'></i> Fecha</th>
+                      <th><i className='bx bx-note'></i> Nota</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -337,24 +343,23 @@ const Inventory = () => {
                       <tr key={movement.id}>
                         <td>
                           <span 
-                            className="movement-type"
-                            style={{ 
-                              backgroundColor: movement.movement_type === 'entrada' ? '#d1fae5' : '#fee2e2',
-                              color: getMovementColor(movement.movement_type)
-                            }}
+                            className={`movement-type ${movement.movement_type}`}
                           >
-                            {getMovementIcon(movement.movement_type)}
-                            {' '}
+                            <i className={`bx ${movement.movement_type === 'entrada' ? 'bx-import' : 'bx-export'}`}></i>
                             {movement.movement_type === 'entrada' ? 'Entrada' : 'Salida'}
                           </span>
                         </td>
                         <td className="product-name">
+                          <i className='bx bxs-box'></i>
                           {movement.product?.name || getProductName(movement.product)}
                         </td>
                         <td className="quantity">
                           <strong>{movement.quantity}</strong> unidades
                         </td>
-                        <td>{formatDate(movement.date)}</td>
+                        <td className="date-cell">
+                          <i className='bx bx-time-five'></i>
+                          {formatDate(movement.date)}
+                        </td>
                         <td className="note">{movement.note || '-'}</td>
                       </tr>
                     ))}
@@ -366,37 +371,47 @@ const Inventory = () => {
         </div>
       )}
 
-      {/* ========== TAB: STOCK BAJO ========== */}
+      {/* TAB: STOCK BAJO */}
       {activeTab === 'low-stock' && (
         <div className="low-stock-content">
-          <div className="alert-card">
-            <div className="alert-icon">⚠️</div>
-            <div className="alert-text">
-              <h3>Productos con Stock Bajo</h3>
-              <p>Estos productos necesitan ser reabastecidos pronto</p>
+          {lowStockProducts.length > 0 && (
+            <div className="alert-card">
+              <div className="alert-icon">
+                <i className='bx bxs-error-circle'></i>
+              </div>
+              <div className="alert-text">
+                <h3>Productos con Stock Bajo</h3>
+                <p>Estos productos necesitan ser reabastecidos pronto</p>
+              </div>
             </div>
-          </div>
-
+          )}
+          
           {lowStockProducts.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">✅</div>
+              <i className='bx bxs-check-circle empty-icon success'></i>
               <h3>¡Todo en orden!</h3>
               <p>No hay productos con stock bajo en este momento</p>
             </div>
           ) : (
             <div className="low-stock-grid">
               {lowStockProducts.map((product) => (
-                <div key={product.id} className="low-stock-card">
+                <div key={product.id} className="inventory-low-stock-card">
                   <div className="stock-status" style={{
                     backgroundColor: getStockStatusColor(product.current_stock)
                   }}>
-                    {product.status === 'critical' ? '🚨' : '⚠️'}
+                    <i className={`bx ${product.status === 'critical' ? 'bxs-error-circle' : 'bxs-error'}`}></i>
                   </div>
                   
                   <div className="product-details">
                     <h4>{product.name}</h4>
-                    <p className="product-code">Código: {product.code}</p>
-                    <p className="product-category">{product.category}</p>
+                    <p className="product-code">
+                      <i className='bx bx-barcode'></i>
+                      {product.code}
+                    </p>
+                    <p className="product-category">
+                      <i className='bx bx-category'></i>
+                      {product.category}
+                    </p>
                   </div>
 
                   <div className="stock-info">
@@ -404,9 +419,11 @@ const Inventory = () => {
                       backgroundColor: getStockStatusColor(product.current_stock),
                       color: 'white'
                     }}>
+                      <i className='bx bx-box'></i>
                       {product.current_stock} unidades
                     </div>
-                    <span className="stock-label">
+                    <span className={`stock-label ${product.status}`}>
+                      <i className={`bx ${product.status === 'critical' ? 'bxs-radiation' : 'bxs-bell-ring'}`}></i>
                       {product.status === 'critical' ? 'Stock Crítico' : 'Stock Bajo'}
                     </span>
                   </div>
@@ -417,12 +434,14 @@ const Inventory = () => {
         </div>
       )}
 
-      {/* ========== TAB: ESTADÍSTICAS ========== */}
+      {/* TAB: ESTADÍSTICAS */}
       {activeTab === 'statistics' && (
         <div className="statistics-content">
           <div className="stats-grid">
             <div className="stat-card">
-              <div className="stat-icon">📋</div>
+              <div className="stat-icon-wrapper primary">
+                <i className='bx bxs-spreadsheet'></i>
+              </div>
               <div className="stat-content">
                 <p className="stat-label">Total Movimientos</p>
                 <p className="stat-value">{stats.totalMovements}</p>
@@ -430,7 +449,9 @@ const Inventory = () => {
             </div>
 
             <div className="stat-card entrada">
-              <div className="stat-icon">📥</div>
+              <div className="stat-icon-wrapper success">
+                <i className='bx bxs-download'></i>
+              </div>
               <div className="stat-content">
                 <p className="stat-label">Total Entradas</p>
                 <p className="stat-value">{stats.totalEntradas}</p>
@@ -439,7 +460,9 @@ const Inventory = () => {
             </div>
 
             <div className="stat-card salida">
-              <div className="stat-icon">📤</div>
+              <div className="stat-icon-wrapper danger">
+                <i className='bx bxs-upload'></i>
+              </div>
               <div className="stat-content">
                 <p className="stat-label">Total Salidas</p>
                 <p className="stat-value">{stats.totalSalidas}</p>
@@ -448,7 +471,9 @@ const Inventory = () => {
             </div>
 
             <div className="stat-card net">
-              <div className="stat-icon">📊</div>
+              <div className="stat-icon-wrapper info">
+                <i className='bx bxs-bar-chart-square'></i>
+              </div>
               <div className="stat-content">
                 <p className="stat-label">Cambio Neto</p>
                 <p className="stat-value" style={{
@@ -462,10 +487,16 @@ const Inventory = () => {
           </div>
 
           <div className="stats-info-card">
-            <h3>📈 Análisis de Inventario</h3>
+            <h3>
+              <i className='bx bxs-analyse'></i>
+              Análisis de Inventario
+            </h3>
             <div className="stats-details">
               <div className="stat-detail">
-                <span className="detail-label">Ratio Entrada/Salida:</span>
+                <span className="detail-label">
+                  <i className='bx bx-bar-chart'></i>
+                  Ratio Entrada/Salida:
+                </span>
                 <span className="detail-value">
                   {stats.totalSalidas > 0 
                     ? (stats.totalEntradas / stats.totalSalidas).toFixed(2)
@@ -473,7 +504,10 @@ const Inventory = () => {
                 </span>
               </div>
               <div className="stat-detail">
-                <span className="detail-label">Promedio por movimiento:</span>
+                <span className="detail-label">
+                  <i className='bx bx-stats'></i>
+                  Promedio por movimiento:
+                </span>
                 <span className="detail-value">
                   {stats.totalMovements > 0
                     ? ((stats.totalEntradas + stats.totalSalidas) / stats.totalMovements).toFixed(0)
@@ -482,7 +516,10 @@ const Inventory = () => {
                 </span>
               </div>
               <div className="stat-detail">
-                <span className="detail-label">Productos con stock bajo:</span>
+                <span className="detail-label">
+                  <i className='bx bx-error-circle'></i>
+                  Productos con stock bajo:
+                </span>
                 <span className="detail-value warning">
                   {lowStockProducts.length}
                 </span>
@@ -492,18 +529,27 @@ const Inventory = () => {
         </div>
       )}
 
-      {/* ========== MODAL: CREAR MOVIMIENTO ========== */}
+      {/* MODAL: CREAR MOVIMIENTO */}
       {showCreateModal && (
         <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>➕ Nuevo Movimiento de Inventario</h3>
+              <h3>
+                <i className='bx bxs-add-to-queue'></i>
+                Nuevo Movimiento de Inventario
+              </h3>
+              <button onClick={() => setShowCreateModal(false)} className="btn-close">
+                <i className='bx bx-x'></i>
+              </button>
             </div>
 
             <form onSubmit={handleCreateMovement}>
               <div className="modal-body">
                 <div className="form-group">
-                  <label>Producto *</label>
+                  <label>
+                    <i className='bx bx-package'></i>
+                    Producto *
+                  </label>
                   <select
                     value={formData.product}
                     onChange={(e) => setFormData({...formData, product: e.target.value})}
@@ -519,19 +565,29 @@ const Inventory = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Tipo de Movimiento *</label>
+                  <label>
+                    <i className='bx bx-transfer-alt'></i>
+                    Tipo de Movimiento *
+                  </label>
                   <select
                     value={formData.movement_type}
                     onChange={(e) => setFormData({...formData, movement_type: e.target.value})}
                     required
                   >
-                    <option value="entrada">📥 Entrada (Agregar stock)</option>
-                    <option value="salida">📤 Salida (Restar stock)</option>
+                    <option value="entrada">
+                      <i className='bx bx-import'></i> Entrada (Agregar stock)
+                    </option>
+                    <option value="salida">
+                      <i className='bx bx-export'></i> Salida (Restar stock)
+                    </option>
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label>Cantidad *</label>
+                  <label>
+                    <i className='bx bx-hash'></i>
+                    Cantidad *
+                  </label>
                   <input
                     type="number"
                     min="1"
@@ -543,7 +599,10 @@ const Inventory = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Nota</label>
+                  <label>
+                    <i className='bx bx-note'></i>
+                    Nota
+                  </label>
                   <textarea
                     value={formData.note}
                     onChange={(e) => setFormData({...formData, note: e.target.value})}
@@ -560,6 +619,7 @@ const Inventory = () => {
                   className="btn-secondary"
                   disabled={loading}
                 >
+                  <i className='bx bx-x'></i>
                   Cancelar
                 </button>
                 <button
@@ -567,7 +627,8 @@ const Inventory = () => {
                   className="btn-primary"
                   disabled={loading}
                 >
-                  {loading ? 'Creando...' : '✓ Crear Movimiento'}
+                  <i className='bx bx-check'></i>
+                  {loading ? 'Creando...' : 'Crear Movimiento'}
                 </button>
               </div>
             </form>

@@ -5,7 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Layout from './components/Layout';
 
-// Páginas que SÍ existen
+// Páginas
 import Login from './pages/Login/Login';
 import Dashboard from './pages/Dashboard/Dashboard';  
 import Products from './pages/Products/Products';      
